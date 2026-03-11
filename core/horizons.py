@@ -299,38 +299,6 @@ class PageCurveHook:
         device = x0.device
         eps = 1e-4
 
-        def _matvec_jtj(v: torch.Tensor) -> torch.Tensor:
-            """Approximate (JᵀJ) @ v  via two finite-difference passes."""
-            inp_base = x0.reshape(activation.shape[1:])
-            v_shaped = v.reshape(activation.shape[1:])
-
-            inp_plus = (inp_base + eps * v_shaped).unsqueeze(0)
-            inp_minus = (inp_base - eps * v_shaped).unsqueeze(0)
-            out_plus = layer(inp_plus)
-            out_minus = layer(inp_minus)
-            if isinstance(out_plus, (tuple, list)):
-                out_plus = out_plus[0]
-            if isinstance(out_minus, (tuple, list)):
-                out_minus = out_minus[0]
-
-            # J @ v  ≈  (f(x+εv) - f(x-εv)) / 2ε
-            jv = (out_plus.reshape(-1) - out_minus.reshape(-1)) / (2 * eps)
-
-            # Jᵀ @ (Jv)  — second finite-diff pass
-            u = jv.reshape(activation.shape[1:])
-            inp_base_out = layer(inp_base.unsqueeze(0))
-            if isinstance(inp_base_out, (tuple, list)):
-                inp_base_out = inp_base_out[0]
-            out_shape = inp_base_out.shape[1:]
-            u_shaped = u.reshape(out_shape)
-
-            # For Jᵀ: perturb in *output* space is harder; use the
-            # approximation: JᵀJ v ≈ σ₁² v direction.  Instead, we
-            # directly build the tridiagonal of JᵀJ from the Jv products.
-            return jv  # Lanczos on J directly gives σ₁ via sqrt(eig(JᵀJ))
-
-        # For efficiency: Lanczos on the operator v -> J@v, then
-        # σ₁ = sqrt(dominant eigenvalue of JᵀJ) ≈ dominant singular value of T
         def _matvec_j(v: torch.Tensor) -> torch.Tensor:
             v_shaped = v.reshape(activation.shape[1:])
             inp_base = x0.reshape(activation.shape[1:])

@@ -322,14 +322,36 @@ class EigenConsciousnessIntegrator(nn.Module):
         self._step_count: int = 0
         self._metric_history: List[Dict[str, float]] = []
 
+        # Channel layout for the proprioceptive metric vector
+        self.channels: Dict[int, str] = {
+            0: 'lyapunov_exp',      # λ_max from PLL state / regulator report
+            1: 'bell_correlation',  # φ_sync (bridge fidelity)
+            2: 'phi_sync',          # spectral gap (phase lock proxy)
+            3: 'beta_0',            # flux epsilon (topological invariant proxy)
+        }
+
+    def get_zeno_signal(self) -> float:
+        """Return the regulator's adaptive measurement frequency.
+
+        Accesses bridge.regulator.measurement_freq via duck typing
+        (no direct import of unitary_regulator). Falls back to 1.0
+        if no regulator is linked, creating the proper negative
+        feedback loop when a regulator is attached.
+        """
+        if hasattr(self.bridge, 'regulator') and self.bridge.regulator is not None:
+            reg = self.bridge.regulator
+            if hasattr(reg, 'measurement_freq'):
+                return float(reg.measurement_freq)
+        return 1.0  # default measurement frequency (no proxy)
+
     def collect_metrics(self) -> torch.Tensor:
         """Gather topological metrics from the bridge subsystem.
 
         Returns a tensor of shape (NUM_METRIC_CHANNELS,) containing:
-          [0] lyapunov   — Bell correlation (proxy for entanglement health)
-          [1] bell_corr  — raw Bell correlation value
-          [2] spec_gap   — spectral gap Δλ
-          [3] flux_eps   — current flux epsilon (Hawking evaporation state)
+          [0] lyapunov_exp   — λ_max from PLL state / regulator report
+          [1] bell_corr      — raw Bell correlation value (φ_sync)
+          [2] phi_sync       — spectral gap Δλ (phase lock proxy)
+          [3] beta_0         — flux epsilon (topological invariant proxy)
         """
         bell = 0.0
         gap = 0.0
@@ -338,7 +360,23 @@ class EigenConsciousnessIntegrator(nn.Module):
 
         if hasattr(self.bridge, 'bell_correlation'):
             bell = float(self.bridge.bell_correlation)
-            lyapunov = bell  # Bell correlation as Lyapunov proxy
+
+        # Channel 0: retrieve actual Lyapunov exponent from regulator.
+        # Prefer bridge.regulator (structural subtyping — no direct import).
+        reg = None
+        if hasattr(self.bridge, 'regulator'):
+            reg = self.bridge.regulator
+        elif hasattr(self.bridge, 'flux_governor') and hasattr(
+            self.bridge.flux_governor, 'regulator'
+        ):
+            reg = self.bridge.flux_governor.regulator
+
+        if reg is not None and hasattr(reg, '_reports') and reg._reports:
+            last_profile = reg._reports[-1].lyapunov_profile
+            if last_profile:
+                lyapunov = max(abs(v) for v in last_profile)
+        # else lyapunov stays 0.0 until a regulator report is available
+
         if hasattr(self.bridge, 'spectral_gap'):
             gap = float(self.bridge.spectral_gap())
         if hasattr(self.bridge, 'flux_governor'):
@@ -382,10 +420,7 @@ class EigenConsciousnessIntegrator(nn.Module):
         # Compute gate value from phase synchronisation
         bell = metrics[1] if metrics.numel() > 1 else metrics[0]
         phi_sync = torch.tensor(bell.item(), dtype=torch.float32)
-        zeno_signal = torch.tensor(
-            float(self._step_count) * 0.01,  # normalised step as Zeno proxy
-            dtype=torch.float32,
-        )
+        zeno_signal = torch.tensor(self.get_zeno_signal(), dtype=torch.float32)
         gate = self.gate(phi_sync, zeno_signal)
 
         # Apply gated proprioceptive injection

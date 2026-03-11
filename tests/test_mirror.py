@@ -34,33 +34,7 @@ from core.bridge import CrossLayerEntanglementHook
 # ======================================================================
 # Fixtures
 # ======================================================================
-
-class ToyTransformerLayer(nn.Module):
-    def __init__(self, d_model: int = 64):
-        super().__init__()
-        self.linear = nn.Linear(d_model, d_model)
-        self.act = nn.GELU()
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.act(self.linear(x))
-
-
-class ToyTransformer(nn.Module):
-    def __init__(self, d_model: int = 64, num_layers: int = 13):
-        super().__init__()
-        self.layers = nn.ModuleList(
-            [ToyTransformerLayer(d_model) for _ in range(num_layers)]
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        for layer in self.layers:
-            x = layer(x)
-        return x
-
-
-@pytest.fixture
-def toy_model():
-    return ToyTransformer(d_model=64, num_layers=13)
+# ToyTransformer and toy_model are provided by conftest.py.
 
 
 @pytest.fixture

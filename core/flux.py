@@ -61,19 +61,6 @@ TAYLOR_ERROR_GUARD: float = 1e-8
 # Vectorised Batch Operations (v1.4 — torch.vmap)
 # ======================================================================
 
-def _single_goe(n: int, seed_offset: torch.Tensor) -> torch.Tensor:
-    """Generate a single Wigner-normalised GOE matrix of size n×n.
-
-    Used as the inner function for vmap vectorisation.
-    """
-    gen = torch.Generator(device=seed_offset.device)
-    gen.manual_seed(int(seed_offset.item()) % (2**31))
-    M = torch.randn(n, n, device=seed_offset.device, dtype=torch.float64,
-                     generator=gen)
-    H = (M + M.T) / (2.0 * (n ** 0.5))
-    return H
-
-
 def batch_goe(n: int, num_heads: int,
               device: torch.device) -> torch.Tensor:
     """Generate a batch of GOE matrices: (num_heads, n, n).
