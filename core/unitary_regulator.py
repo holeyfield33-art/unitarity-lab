@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 
+from .bridge import CrossLayerEntanglementHook
 from .casimir_opt import CasimirOptimizer, _kolmogorov_penalty, _laminar_penalty
 from .pll_monitor import PLLMonitor, PLLState
 
@@ -87,6 +88,25 @@ def compute_topological_heatmap(
 # Regulator Report
 # ======================================================================
 
+# ======================================================================
+# Wormhole Gap Monitor
+# ======================================================================
+
+WORMHOLE_GAP_THRESHOLD: float = 0.15
+
+
+def wormhole_gap_alert(spectral_gap: float, threshold: float = WORMHOLE_GAP_THRESHOLD) -> bool:
+    """Check if the spectral gap (Δλ) has dropped below threshold.
+
+    A collapsing spectral gap indicates the entanglement bridge between
+    the Page Time source and the information sink is weakening —
+    analogous to a wormhole pinching off.
+
+    Returns True if the gap is critically low (alert condition).
+    """
+    return spectral_gap < threshold
+
+
 @dataclass
 class RegulatorReport:
     """Single-step aggregated report from the Unitary Regulator."""
@@ -97,6 +117,9 @@ class RegulatorReport:
     lyapunov_profile: List[float]
     heatmap: Dict[int, Dict[str, float]]
     casimir_diagnostics: Dict[str, object]
+    wormhole_gap: Optional[float] = None
+    wormhole_alert: bool = False
+    bridge_diagnostics: Optional[Dict[str, object]] = None
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, default=str)
@@ -126,9 +149,13 @@ class UnitaryRegulator:
         self,
         pll: PLLMonitor,
         optimizer: Optional[CasimirOptimizer] = None,
+        bridge: Optional[CrossLayerEntanglementHook] = None,
+        wormhole_threshold: float = WORMHOLE_GAP_THRESHOLD,
     ):
         self.pll = pll
         self.optimizer = optimizer
+        self.bridge = bridge
+        self.wormhole_threshold = wormhole_threshold
         self._reports: List[RegulatorReport] = []
 
     def report(
@@ -143,6 +170,15 @@ class UnitaryRegulator:
         )
         casimir_diag = self.optimizer.diagnostics() if self.optimizer else {}
 
+        # --- Wormhole Gap Monitor (v1.2) ---
+        gap: Optional[float] = None
+        alert = False
+        bridge_diag: Optional[Dict[str, object]] = None
+        if self.bridge is not None:
+            gap = self.bridge.spectral_gap()
+            alert = wormhole_gap_alert(gap, self.wormhole_threshold)
+            bridge_diag = self.bridge.diagnostics()
+
         rpt = RegulatorReport(
             step=step,
             pll_locked=self.pll.is_locked,
@@ -150,6 +186,9 @@ class UnitaryRegulator:
             lyapunov_profile=lyapunov_profile.detach().cpu().tolist(),
             heatmap=heatmap,
             casimir_diagnostics=casimir_diag,
+            wormhole_gap=gap,
+            wormhole_alert=alert,
+            bridge_diagnostics=bridge_diag,
         )
         self._reports.append(rpt)
         return rpt
@@ -187,6 +226,16 @@ class UnitaryRegulator:
             lines.append("  Casimir Diagnostics:")
             for key, val in report.casimir_diagnostics.items():
                 lines.append(f"    {key}: {val}")
+
+        # --- Wormhole Gap Monitor (v1.2) ---
+        if report.wormhole_gap is not None:
+            lines.append("")
+            status = "ALERT — BRIDGE COLLAPSING" if report.wormhole_alert else "STABLE"
+            lines.append(f"  Wormhole Gap Monitor: Δλ = {report.wormhole_gap:.4f}  [{status}]")
+            if report.bridge_diagnostics:
+                bell = report.bridge_diagnostics.get("bell_correlation", "N/A")
+                lines.append(f"    Bell Correlation: {bell}")
+                lines.append(f"    Source → Sink: Layer {report.bridge_diagnostics.get('source_layer')} → Layer {report.bridge_diagnostics.get('sink_layer')}")
 
         text = "\n".join(lines)
         print(text)
