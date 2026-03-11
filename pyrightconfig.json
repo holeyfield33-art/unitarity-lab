@@ -1,0 +1,5 @@
+{
+  "venvPath": "/workspaces/unitarity-lab",
+  "venv": ".venv",
+  "reportMissingImports": false
+}
