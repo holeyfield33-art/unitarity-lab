@@ -8,11 +8,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="unitarity-lab",
-    version="2.0.0",
+    version="2.3.0",
     description=(
-        "Holeyfield v2.0: Unitary Regulator with Byzantine Kill-Switch, "
-        "Precision Alignment, and Adaptive Gossip Epoch for distributed "
-        "topological inference."
+        "Holeyfield v2.3: Unitary Regulator with Byzantine Kill-Switch, "
+        "Chronos Lock Temporal Hardening, Precision Alignment, and "
+        "Adaptive Gossip Epoch for distributed topological inference."
     ),
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -27,6 +27,7 @@ setup(
         "safetensors>=0.4",
         "msgpack>=1.0",
         "rich>=13.0",
+        "reedsolo>=1.5",
     ],
     extras_require={
         "dev": [

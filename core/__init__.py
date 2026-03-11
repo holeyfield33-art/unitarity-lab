@@ -35,6 +35,17 @@ from .kill_switch import (
 from .universal_hook import UniversalHookWrapper
 from .ghost_layer import RecursiveMirror
 from .dashboard import HeartbeatDashboard
+from .chronos_lock import (
+    ChronosLock,
+    TPS_CLIP_MIN,
+    TPS_CLIP_MAX,
+    DESYNC_WINDOW,
+    DESYNC_BASE_THRESHOLD,
+    PROBATION_CONSECUTIVE,
+    PROBATION_TOKEN_PENALTY,
+    TIMESTAMP_GOSSIP_INTERVAL,
+    ENTROPY_DRIFT_LIMIT,
+)
 from .semantic_lock import (
     SemanticLockController,
     SemanticModulator,
@@ -136,4 +147,13 @@ __all__ = [
     "FLASH_VETO_DELTA",
     "ANCHOR_GOSSIP_INTERVAL",
     "ANCHOR_FREEZE_TOKENS",
+    "ChronosLock",
+    "TPS_CLIP_MIN",
+    "TPS_CLIP_MAX",
+    "DESYNC_WINDOW",
+    "DESYNC_BASE_THRESHOLD",
+    "PROBATION_CONSECUTIVE",
+    "PROBATION_TOKEN_PENALTY",
+    "TIMESTAMP_GOSSIP_INTERVAL",
+    "ENTROPY_DRIFT_LIMIT",
 ]

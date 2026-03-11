@@ -33,6 +33,7 @@ from .precision_projector import (
 )
 from .kill_switch import ByzantineVoting, NodeStatus
 from .ghost_layer import RecursiveMirror
+from .chronos_lock import ChronosLock
 
 
 class DualNodeEntanglementBridge:
@@ -96,6 +97,10 @@ class DualNodeEntanglementBridge:
         # --- v2.0: Byzantine Kill-Switch ---
         self.voting = ByzantineVoting(max_faulty=1)
 
+        # --- v2.3: Chronos Lock (temporal hardening) ---
+        self.chronos = ChronosLock(node_id=node_id)
+        self._last_step_time: float = 0.0
+
     # ------------------------------------------------------------------
     # Precision projector setup
     # ------------------------------------------------------------------
@@ -126,15 +131,31 @@ class DualNodeEntanglementBridge:
     # Send / Receive with precision handling
     # ------------------------------------------------------------------
     def send_krylov_basis(self, krylov_basis: torch.Tensor) -> None:
-        """Compress, cast to BF16+dither, and transmit Krylov basis."""
+        """Compress, cast to BF16+dither, and transmit Krylov basis.
+
+        v2.3: Includes RS-encoded temporal shard and chain hash.
+        """
         U, _, _ = torch.svd_lowrank(krylov_basis.float(), q=self.krylov_dim)
         # v2.0: Cast to canonical BF16 with dithering
         U_dithered = add_dither(U, bits=16)
+
+        # v2.3: Measure step TPS
+        now = time.monotonic()
+        if self._last_step_time > 0:
+            dt = now - self._last_step_time
+            if dt > 0:
+                self.chronos.update_tps(1.0 / dt)
+        self._last_step_time = now
+
         msg = {
             'node': self.node_id,
             'basis': U_dithered.cpu().float().numpy(),
-            'timestamp': time.monotonic(),
+            'timestamp': now,
             'precision': self.precision.value,
+            # v2.3: temporal shard + chain validation
+            'temporal_shard': self.chronos.encode_shard(),
+            'seq_pos': self.chronos.seq_pos,
+            'prev_τ_hash': self.chronos.prev_τ_hash,
         }
         self.pub.send_pyobj(msg)
 
@@ -171,6 +192,49 @@ class DualNodeEntanglementBridge:
                     remote_id = msg.get('node', 'unknown')
                     self.voting.suspect(remote_id, self.node_id)
                     return None  # Hash mismatch — discard
+
+            # v2.3: Chronos Lock — validate temporal shard
+            temporal_shard = msg.get('temporal_shard')
+            remote_seq = msg.get('seq_pos', 0)
+            remote_prev_hash = msg.get('prev_τ_hash')
+
+            if temporal_shard is not None:
+                try:
+                    seq, τ_remote, tps_remote, prev_hash, integral = (
+                        self.chronos.decode_shard(temporal_shard)
+                    )
+                except ValueError:
+                    # RS decode failed — shard corruption
+                    remote_id = msg.get('node', 'unknown')
+                    self.voting.suspect(remote_id, self.node_id)
+                    return None
+
+                # Sequence chain validation
+                if not self.chronos.validate_τ_chain(remote_prev_hash):
+                    accept, request_missing = self.chronos.handle_jump(
+                        self.chronos.seq_pos, remote_seq,
+                    )
+                    if not accept:
+                        return None  # sequence jump — wait for recovery
+
+                # Desync monitoring
+                τ_local = self.chronos.τ_history[-1] if self.chronos.τ_history else 0.0
+                Δτ = τ_local - τ_remote
+                if self.chronos.update_desync(Δτ):
+                    remote_id = msg.get('node', 'unknown')
+                    self.voting.suspect(remote_id, self.node_id)
+                    return None  # cumulative desync sever
+
+                # Probation check
+                if self.chronos.check_probation(Δτ):
+                    remote_id = msg.get('node', 'unknown')
+                    self.voting.report_beta(remote_id, 0.30)  # demote
+
+                # Update remote TPS
+                self.chronos.update_tps(tps_remote)
+
+                # Record τ for chain
+                self.chronos.record_τ(τ_remote)
 
             return basis
         except zmq.Again:
@@ -282,6 +346,20 @@ class DualNodeEntanglementBridge:
             remote_node_id, beta_tb, self.node_id,
         )
         return status
+
+    def chronos_wait_spin(
+        self,
+        h: torch.Tensor,
+        Δτ: float,
+    ) -> torch.Tensor:
+        """v2.3: Apply unitary wait spin when local node is ahead."""
+        if Δτ <= 0:
+            return h
+        return self.chronos.unitary_wait_spin(h, Δτ)
+
+    def maybe_timestamp_sync(self) -> bool:
+        """v2.3: Return True if a timestamp gossip round is due."""
+        return self.chronos.should_timestamp_sync()
 
     def close(self) -> None:
         """Clean shutdown of ZMQ sockets."""

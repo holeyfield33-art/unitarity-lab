@@ -35,6 +35,7 @@ class NodeStatus(str, Enum):
     DEGRADED = "DEGRADED"
     SEVERED = "SEVERED"
     BANNED = "BANNED"
+    OBSERVER = "OBSERVER"  # v2.3: Chronos probation
 
 
 @dataclass
@@ -152,10 +153,37 @@ class ByzantineVoting:
         return False
 
     def is_influence_nullified(self, node_id: str) -> bool:
-        """Nodes in DEGRADED/SEVERED/BANNED have their influence on
-        the collective phase nullified (starvation prevention)."""
+        """Nodes in DEGRADED/SEVERED/BANNED/OBSERVER have their influence
+        on the collective phase nullified (starvation prevention)."""
         status = self.get_status(node_id)
-        return status in (NodeStatus.DEGRADED, NodeStatus.SEVERED, NodeStatus.BANNED)
+        return status in (
+            NodeStatus.DEGRADED, NodeStatus.SEVERED,
+            NodeStatus.BANNED, NodeStatus.OBSERVER,
+        )
+
+    # ------------------------------------------------------------------
+    # v2.3: Chronos desync sever + probation
+    # ------------------------------------------------------------------
+
+    def desync_sever(self, node_id: str, accuser_id: str) -> NodeStatus:
+        """Sever a node due to cumulative desync (Chronos Lock).
+
+        Immediately files accusation and sets SEVERED.
+        """
+        self.suspect(node_id, accuser_id)
+        rec = self._get_or_create(node_id)
+        rec.status = NodeStatus.SEVERED
+        return rec.status
+
+    def set_observer(self, node_id: str) -> NodeStatus:
+        """Demote a node to observer mode (Chronos probation).
+
+        Observer nodes receive shards but do not contribute.
+        """
+        rec = self._get_or_create(node_id)
+        if rec.status == NodeStatus.ACTIVE:
+            rec.status = NodeStatus.OBSERVER
+        return rec.status
 
     # ------------------------------------------------------------------
     # v2.1: Quarantine integration (RecursiveMirror L_int > 0.8)

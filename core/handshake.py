@@ -99,6 +99,9 @@ def perform_handshake(
         "epoch_len": local_epoch_len,
         "supported_projectors": [(s.value, t.value) for s, t in supported],
         "capability_proxy": capability_proxy,
+        # v2.3: Initial TPS estimate and clock offset for Chronos Lock
+        "tps_estimate": 10.0,
+        "clock_offset": 0.0,
     }
     pub_socket.send_pyobj(hello)
 
@@ -151,6 +154,9 @@ def perform_handshake(
         "nonce": bytes.fromhex(remote_nonce_hex),
         "my_nonce": nonce,
         "remote_capability": remote_hello.get("capability_proxy"),
+        # v2.3: Chronos Lock initial estimates
+        "remote_tps_estimate": remote_hello.get("tps_estimate", 10.0),
+        "remote_clock_offset": remote_hello.get("clock_offset", 0.0),
     }
 
 

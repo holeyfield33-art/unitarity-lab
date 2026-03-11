@@ -20,7 +20,7 @@ import hashlib
 import struct
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -671,7 +671,7 @@ def holographic_semantic_shard_encode(
 
 
 def holographic_semantic_shard_decode(
-    shards: List[Optional[torch.Tensor]],
+    shards: Sequence[Optional[torch.Tensor]],
     dim: int = SEM_PROJECTION_DIM,
     redundancy: int = ERASURE_REDUNDANCY,
 ) -> Tuple[torch.Tensor, torch.Tensor, bool]:
@@ -713,6 +713,7 @@ def holographic_semantic_shard_decode(
         idx = i + 1
         if idx < len(shards) and shards[idx] is not None:
             shard = shards[idx]
+            assert shard is not None  # narrowing for type checker
             if shard.shape[0] != expected_len:
                 continue
             # Reverse the parity encoding
@@ -733,7 +734,7 @@ def holographic_semantic_shard_decode(
 
 
 def validate_shard_integrity(
-    shards: List[Optional[torch.Tensor]],
+    shards: Sequence[Optional[torch.Tensor]],
     dim: int = SEM_PROJECTION_DIM,
 ) -> Tuple[bool, str]:
     """Cross-validate shards by decoding from multiple sources.
@@ -757,6 +758,7 @@ def validate_shard_integrity(
         idx = i + 1
         if idx < len(shards) and shards[idx] is not None:
             shard = shards[idx]
+            assert shard is not None  # narrowing for type checker
             if shard.shape[0] != expected_len:
                 continue
             gen = torch.Generator()

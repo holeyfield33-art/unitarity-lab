@@ -19,6 +19,7 @@ import struct
 
 import pytest
 import torch
+from typing import Optional, Sequence
 
 from core.semantic_lock import (
     AnchorConsensusGossip,
@@ -462,9 +463,8 @@ class TestHolographicShardErasure:
     def test_decode_from_erasure_shard_only(self, sem_state):
         """Decode should work with only an erasure shard (primary missing)."""
         W_sem, anchor_k = sem_state
-        shards = holographic_semantic_shard_encode(W_sem, anchor_k)
-        # Remove primary
-        shards[0] = None
+        encoded = holographic_semantic_shard_encode(W_sem, anchor_k)
+        shards: list[Optional[torch.Tensor]] = [None] + encoded[1:]
         W_rec, a_rec, valid = holographic_semantic_shard_decode(shards)
         assert valid
         assert torch.allclose(W_rec, W_sem[:32], atol=1e-5)
@@ -472,7 +472,7 @@ class TestHolographicShardErasure:
 
     def test_decode_fails_all_missing(self, sem_state):
         """All shards missing → decode fails."""
-        shards = [None, None, None]
+        shards: Sequence[Optional[torch.Tensor]] = [None, None, None]
         _, _, valid = holographic_semantic_shard_decode(shards)
         assert not valid
 
@@ -487,9 +487,9 @@ class TestHolographicShardErasure:
     def test_shard_cross_validation_detects_tamper(self, sem_state):
         """Tampering a shard should fail cross-validation."""
         W_sem, anchor_k = sem_state
-        shards = holographic_semantic_shard_encode(W_sem, anchor_k)
+        encoded = holographic_semantic_shard_encode(W_sem, anchor_k)
         # Tamper primary shard
-        shards[0] = shards[0] + 1.0
+        shards: list[Optional[torch.Tensor]] = [encoded[0] + 1.0, encoded[1], encoded[2]]
         valid, reason = validate_shard_integrity(shards)
         assert not valid
         assert "mismatch" in reason
@@ -504,10 +504,9 @@ class TestHolographicShardErasure:
     def test_decode_second_erasure_shard(self, sem_state):
         """Decode from second erasure shard only."""
         W_sem, anchor_k = sem_state
-        shards = holographic_semantic_shard_encode(W_sem, anchor_k)
+        encoded = holographic_semantic_shard_encode(W_sem, anchor_k)
         # Remove primary and first erasure
-        shards[0] = None
-        shards[1] = None
+        shards: list[Optional[torch.Tensor]] = [None, None] + encoded[2:]
         W_rec, a_rec, valid = holographic_semantic_shard_decode(shards)
         assert valid
         assert torch.allclose(a_rec, anchor_k, atol=1e-5)
