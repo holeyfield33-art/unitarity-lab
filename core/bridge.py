@@ -1,10 +1,19 @@
 """
-bridge.py — The Entanglement Bridge (v1.3 Certified)
+bridge.py — The Entanglement Bridge (v1.4 Superfluid)
 =====================================================
 Cross-Layer Entanglement Hook with **LoRA (Rank=8)** adaptation
 and **Hawking Flux Governor** for loop-breaking.
 
-v1.3-certified upgrades:
+v1.4-superfluid upgrades:
+  - **Parallel GOE Vectorization**: batched kicks via torch.vmap +
+    Taylor-2nd order expm across all attention heads.
+  - **Staggered Flux Guard**: 25% of heads kicked per forward pass
+    to maintain the 1.8GB VRAM cap.
+  - **Batched einsum injection**: ``einsum('hij,hjk->hik', ...)``
+    for O(1) kick application across the Layer 7 → Layer 12 bridge.
+  - Heisenberg scaling (√N) for Parallel Zeno dynamics.
+
+v1.3-certified (preserved):
   - **HawkingFluxGovernor** integrated: GOE kicks to LoRA A matrix
     on bell_history stagnation. Epsilon decays per kick (Hawking
     evaporation at rate 0.95). Rectangular subspace embed for d×r.
@@ -31,7 +40,13 @@ from typing import Callable, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 
-from .flux import HawkingFluxGovernor
+from .flux import (
+    HawkingFluxGovernor,
+    batch_goe,
+    batch_expm,
+    select_staggered_heads,
+    STAGGER_FRACTION,
+)
 from .horizons import _lanczos_tridiagonal
 
 
@@ -104,6 +119,7 @@ class CrossLayerEntanglementHook:
         lora_rank: int = 8,
         power_iter_steps: int = 3,
         flux_epsilon: float = 1e-4,
+        num_heads: int = 32,
         layer_accessor: Optional[Callable[[nn.Module], nn.ModuleList]] = None,
     ):
         self.source_layer = source_layer
@@ -114,6 +130,7 @@ class CrossLayerEntanglementHook:
         self.lora_rank = lora_rank
         self.power_iter_steps = power_iter_steps
         self.flux_epsilon = flux_epsilon
+        self.num_heads = num_heads
         self._enabled = True
 
         accessor = layer_accessor or (lambda m: m.layers)
@@ -431,25 +448,58 @@ class CrossLayerEntanglementHook:
         return (eigvals_sorted[0] - eigvals_sorted[1]).item()
 
     def _maybe_apply_flux_kick(self) -> None:
-        """Check bell_history for stagnation; apply GOE kick to LoRA weights if stuck.
+        """Check bell_history for stagnation; apply batched GOE kicks.
 
-        The kick is applied to the LoRA A matrix (d×r). The flux governor
-        handles rectangular shapes via subspace embed: a d×d GOE rotation
-        is generated and the (d, r) subblock is extracted, preserving the
-        singular value spectrum of A (svd_diff < 1e-3).
+        v1.4-superfluid: Uses batched vmap kicks with the Staggered
+        Flux Guard (25% of heads per step). Kicks are injected via
+        ``torch.einsum('hij,hjk->hik', kicks, A_heads)`` for O(1)
+        application across selected heads.
+
+        Falls back to the v1.3 single-head kick when num_heads == 1.
         """
         if not self.flux_governor.check_stagnation(self._bell_history):
             return
 
-        # Apply topological kick to LoRA A matrix (supports rectangular d×r)
-        # Kick is d×d orthogonal rotation applied on the left: kick @ A
         A = self.lora_adapter.lora_A
         d, r = A.shape
         if d < 2:
             return
-        kick = self.flux_governor.get_topological_kick((d, d), A.device)
+
+        if self.num_heads <= 1:
+            # v1.3 fallback: single kick on entire LoRA A
+            kick = self.flux_governor.get_topological_kick((d, d), A.device)
+            with torch.no_grad():
+                A.copy_(kick @ A)
+            return
+
+        # v1.4 parallel path: batched kicks across staggered heads
+        head_dim = d // self.num_heads
+        if head_dim < 2:
+            # Dimension too small for per-head kicks, fall back
+            kick = self.flux_governor.get_topological_kick((d, d), A.device)
+            with torch.no_grad():
+                A.copy_(kick @ A)
+            return
+
+        kicks, active_heads = self.flux_governor.get_batched_topological_kicks(
+            num_heads=self.num_heads,
+            dim=head_dim,
+            device=A.device,
+            stagger=True,
+        )
+
+        # Apply via einsum: reshape A into (num_heads, head_dim, r),
+        # apply kicks to selected heads, reshape back
         with torch.no_grad():
-            A.copy_(kick @ A)
+            A_reshaped = A.data.reshape(self.num_heads, head_dim, r)
+            kicks_float = kicks.float()
+            # Apply kicks to active heads via batched einsum
+            A_active = A_reshaped[active_heads]  # (n_active, head_dim, r)
+            A_kicked = torch.einsum(
+                'hij,hjk->hik', kicks_float, A_active
+            )  # (n_active, head_dim, r)
+            A_reshaped[active_heads] = A_kicked
+            A.copy_(A_reshaped.reshape(d, r))
 
     def diagnostics(self) -> Dict[str, object]:
         """Return bridge diagnostics for the unitary regulator."""
@@ -461,12 +511,15 @@ class CrossLayerEntanglementHook:
             "sink_layer": self.sink_layer,
             "top_k": self.top_k,
             "lora_rank": self.lora_rank,
+            "num_heads": self.num_heads,
             "power_iter_steps": self.power_iter_steps,
             "coupling_strength": self.coupling_strength,
             "flux_stagnation_count": self.flux_governor.stagnation_count,
             "flux_total_kicks": len(self.flux_governor.kick_history),
             "flux_epsilon": self.flux_governor.epsilon,
             "flux_effective_epsilon": self.flux_governor.effective_epsilon,
+            "flux_step_counter": self.flux_governor._step_counter,
+            "stagger_fraction": STAGGER_FRACTION,
             "enabled": self._enabled,
         }
 
