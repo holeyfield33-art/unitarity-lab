@@ -13,13 +13,14 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import asdict, dataclass
+import random
+from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 
-from .bridge import CrossLayerEntanglementHook
+from .bridge import CrossLayerEntanglementHook, PROJECTION_NORM_MIN, PROJECTION_NORM_MAX
 from .casimir_opt import CasimirOptimizer, _kolmogorov_penalty, _laminar_penalty
 from .pll_monitor import PLLMonitor, PLLState
 
@@ -107,6 +108,68 @@ def wormhole_gap_alert(spectral_gap: float, threshold: float = WORMHOLE_GAP_THRE
     return spectral_gap < threshold
 
 
+# ======================================================================
+# Zeno Stabilization (v1.2-stable)
+# ======================================================================
+
+DEFAULT_MEASUREMENT_FREQ: float = 1.0
+MIN_MEASUREMENT_FREQ: float = 0.1
+MAX_MEASUREMENT_FREQ: float = 10.0
+
+
+def adaptive_measurement_freq(
+    bell_history: List[float],
+    base_freq: float = DEFAULT_MEASUREMENT_FREQ,
+) -> float:
+    """Adaptively scale measurement frequency based on std(bell_history).
+
+    Higher variance in Bell correlations → more frequent measurement
+    (stronger Zeno observation) to suppress decoherence.
+    Lower variance → relax measurement frequency to reduce overhead.
+
+    Returns a frequency in [MIN_MEASUREMENT_FREQ, MAX_MEASUREMENT_FREQ].
+    """
+    if len(bell_history) < 2:
+        return base_freq
+
+    t = torch.tensor(bell_history[-50:], dtype=torch.float32)  # last 50
+    std = t.std().item()
+
+    # Scale: freq = base * (1 + 10 * std), clamped
+    freq = base_freq * (1.0 + 10.0 * std)
+    return max(MIN_MEASUREMENT_FREQ, min(MAX_MEASUREMENT_FREQ, freq))
+
+
+def poisson_sampling_guard(measurement_freq: float) -> bool:
+    """Poisson sampling guard to prevent periodic resonance artifacts.
+
+    Instead of measuring at fixed intervals (which can create resonance
+    with the model's internal oscillation modes), we sample from a
+    Poisson process. Each call returns True (do measure) with probability
+    proportional to the measurement frequency.
+
+    This breaks periodicity while maintaining the desired average rate.
+    """
+    # Probability of measurement this step: 1 - exp(-freq * dt), dt=1
+    prob = 1.0 - math.exp(-measurement_freq)
+    return random.random() < prob
+
+
+def enforce_projection_norm(
+    tensor: torch.Tensor,
+    norm_min: float = PROJECTION_NORM_MIN,
+    norm_max: float = PROJECTION_NORM_MAX,
+) -> torch.Tensor:
+    """Clamp the per-row norm of a tensor to [norm_min, norm_max].
+
+    Ensures the bridge projection stays in a numerically safe range.
+    """
+    norms = tensor.norm(dim=-1, keepdim=True)
+    clamped = norms.clamp(norm_min, norm_max)
+    scale = clamped / (norms + 1e-12)
+    return tensor * scale
+
+
 @dataclass
 class RegulatorReport:
     """Single-step aggregated report from the Unitary Regulator."""
@@ -120,6 +183,8 @@ class RegulatorReport:
     wormhole_gap: Optional[float] = None
     wormhole_alert: bool = False
     bridge_diagnostics: Optional[Dict[str, object]] = None
+    measurement_freq: Optional[float] = None
+    zeno_measurement_taken: bool = True
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, default=str)
@@ -151,12 +216,15 @@ class UnitaryRegulator:
         optimizer: Optional[CasimirOptimizer] = None,
         bridge: Optional[CrossLayerEntanglementHook] = None,
         wormhole_threshold: float = WORMHOLE_GAP_THRESHOLD,
+        base_measurement_freq: float = DEFAULT_MEASUREMENT_FREQ,
     ):
         self.pll = pll
         self.optimizer = optimizer
         self.bridge = bridge
         self.wormhole_threshold = wormhole_threshold
+        self.base_measurement_freq = base_measurement_freq
         self._reports: List[RegulatorReport] = []
+        self._current_measurement_freq: float = base_measurement_freq
 
     def report(
         self,
@@ -174,10 +242,28 @@ class UnitaryRegulator:
         gap: Optional[float] = None
         alert = False
         bridge_diag: Optional[Dict[str, object]] = None
+        meas_freq: Optional[float] = None
+        zeno_taken = True
+
         if self.bridge is not None:
-            gap = self.bridge.spectral_gap()
-            alert = wormhole_gap_alert(gap, self.wormhole_threshold)
-            bridge_diag = self.bridge.diagnostics()
+            # Adaptive measurement frequency based on Bell history
+            meas_freq = adaptive_measurement_freq(
+                self.bridge.bell_history, self.base_measurement_freq
+            )
+            self._current_measurement_freq = meas_freq
+
+            # Poisson sampling guard — decide whether to measure this step
+            zeno_taken = poisson_sampling_guard(meas_freq)
+
+            if zeno_taken:
+                gap = self.bridge.spectral_gap()
+                alert = wormhole_gap_alert(gap, self.wormhole_threshold)
+                bridge_diag = self.bridge.diagnostics()
+            else:
+                # Skip detailed measurement this step (Zeno anti-resonance)
+                gap = None
+                alert = False
+                bridge_diag = {"measurement_skipped": True}
 
         rpt = RegulatorReport(
             step=step,
@@ -189,6 +275,8 @@ class UnitaryRegulator:
             wormhole_gap=gap,
             wormhole_alert=alert,
             bridge_diagnostics=bridge_diag,
+            measurement_freq=meas_freq,
+            zeno_measurement_taken=zeno_taken,
         )
         self._reports.append(rpt)
         return rpt
@@ -236,6 +324,14 @@ class UnitaryRegulator:
                 bell = report.bridge_diagnostics.get("bell_correlation", "N/A")
                 lines.append(f"    Bell Correlation: {bell}")
                 lines.append(f"    Source → Sink: Layer {report.bridge_diagnostics.get('source_layer')} → Layer {report.bridge_diagnostics.get('sink_layer')}")
+        elif report.bridge_diagnostics and not report.zeno_measurement_taken:
+            lines.append("")
+            lines.append("  Wormhole Gap Monitor: [SKIPPED — Poisson anti-resonance]")
+
+        # --- Zeno Stabilization (v1.2-stable) ---
+        if report.measurement_freq is not None:
+            lines.append(f"  Zeno Measurement Freq: {report.measurement_freq:.3f}")
+            lines.append(f"  Zeno Measurement Taken: {'YES' if report.zeno_measurement_taken else 'NO (Poisson skip)'}")
 
         text = "\n".join(lines)
         print(text)
