@@ -1,4 +1,4 @@
-# Holeyfield v1.5-mirror — Topological Proprioception (Production)
+# Holeyfield v1.7-unitary-link — Inter-Model ER=EPR (Production)
 # TMRP Session 27 Mirror Integration | 128b << 12kb R_max | α=0.1 operating point
 
 from .pll_monitor import PLLMonitor, SpectralAnomaly
@@ -19,6 +19,7 @@ from .unitary_regulator import (
     wormhole_gap_alert, WORMHOLE_GAP_THRESHOLD,
     adaptive_measurement_freq, poisson_sampling_guard, enforce_projection_norm,
 )
+from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 
 __all__ = [
     "PLLMonitor",
@@ -55,4 +56,6 @@ __all__ = [
     "rsvd",
     "_lanczos_tridiagonal",
     "_rayleigh_quotient_iteration",
+    "DualNodeEntanglementBridge",
+    "register_dual_node_hook",
 ]

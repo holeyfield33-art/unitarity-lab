@@ -49,6 +49,7 @@ from .flux import (
 )
 from .horizons import _lanczos_tridiagonal
 from .mirror import EigenConsciousnessIntegrator, ProprioceptiveHook, TopologicalGate
+from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 
 
 # ======================================================================
@@ -536,8 +537,27 @@ class CrossLayerEntanglementHook:
             diag["mirror"] = self.mirror.diagnostics()
         return diag
 
+    def register_dual_link(self, node_id: str = "A") -> None:
+        """Attach a DualNodeEntanglementBridge for inter-model ER=EPR.
+
+        The hook fires at source_layer and sink_layer, transmitting
+        the Krylov basis to the partner and injecting unitary rotations
+        from the partner's subspace. Cross-model phi_AB values are
+        appended to ``_bell_history`` for dashboard tracking.
+        """
+        hook_fn = register_dual_node_hook(self, node_id=node_id)
+        # Register on both source and sink layers with layer_idx curried
+        for layer_idx in (self.source_layer, self.sink_layer):
+            h = self.layers[layer_idx].register_forward_hook(
+                lambda mod, inp, out, idx=layer_idx: hook_fn(mod, inp, out, idx)
+            )
+            self._handles.append(h)
+
     def remove_hooks(self) -> None:
         """Remove all registered forward hooks."""
         for h in self._handles:
             h.remove()
         self._handles.clear()
+        if hasattr(self, 'dual_link') and self.dual_link is not None:
+            self.dual_link.close()
+            self.dual_link = None
