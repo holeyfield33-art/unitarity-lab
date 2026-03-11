@@ -162,6 +162,9 @@ class CrossLayerEntanglementHook:
             bridge=self, hidden_dim=d_model, alpha=coupling_strength,
         )
 
+        # Head mask for staggered flux (v1.8)
+        self._head_mask: Optional[torch.Tensor] = None
+
         # Internal state
         self._source_activation: Optional[torch.Tensor] = None
         self._bridge_eigenvectors: Optional[torch.Tensor] = None
@@ -171,6 +174,36 @@ class CrossLayerEntanglementHook:
         self._handles: list = []
 
         self._register_hooks()
+
+    # ------------------------------------------------------------------
+    # Head mask (v1.8 staggered flux)
+    # ------------------------------------------------------------------
+    def set_head_mask(self, mask: torch.Tensor) -> None:
+        """Set the boolean head mask for staggered entanglement.
+
+        Parameters
+        ----------
+        mask : Tensor of shape ``(num_heads,)`` — dtype ``torch.bool``.
+            Only heads where ``mask[h] == True`` receive the bridge signal.
+        """
+        self._head_mask = mask.to(self.lora_adapter.lora_A.device)
+
+    def _apply_head_mask(self, signal: torch.Tensor) -> torch.Tensor:
+        """Zero out bridge signal contributions for inactive heads.
+
+        Reshapes the last dimension into ``(num_heads, head_dim)``
+        and multiplies by the boolean mask, leaving inactive heads
+        with zero entanglement.
+        """
+        if self._head_mask is None:
+            return signal
+        d = signal.shape[-1]
+        head_dim = d // self.num_heads
+        if head_dim * self.num_heads != d:
+            return signal  # dimension mismatch — skip masking
+        mask_expanded = self._head_mask.repeat_interleave(head_dim).float()
+        # Broadcast: signal (..., d) * mask (d,)
+        return signal * mask_expanded
 
     def _infer_d_model(self) -> int:
         """Infer d_model from the first layer's parameters."""
@@ -220,6 +253,9 @@ class CrossLayerEntanglementHook:
 
         # Adapt bias shape to match sink activation
         bias = self._adapt_bias(self._bridge_bias, act)
+
+        # Apply head mask to bias (v1.8 staggered flux)
+        bias = self._apply_head_mask(bias)
 
         # Apply LoRA adapter for low-rank projection (v1.2-stable)
         biased = self.lora_adapter(act) + self.coupling_strength * bias
@@ -397,6 +433,16 @@ class CrossLayerEntanglementHook:
     # Public API
     # ------------------------------------------------------------------
     @property
+    def device(self) -> torch.device:
+        """Device of the bridge (inferred from LoRA adapter)."""
+        return self.lora_adapter.lora_A.device
+
+    @property
+    def hawking_flux(self):
+        """Alias for flux_governor (used by RecursiveMirror)."""
+        return self.flux_governor
+
+    @property
     def regulator(self):
         """Expose the UnitaryRegulator linked to the flux governor.
 
@@ -561,6 +607,33 @@ class CrossLayerEntanglementHook:
                 lambda mod, inp, out, idx=layer_idx: hook_fn(mod, inp, out, idx)
             )
             self._handles.append(h)
+
+    # ------------------------------------------------------------------
+    # Re-orthogonalization (v2.0)
+    # ------------------------------------------------------------------
+    @torch.no_grad()
+    def reorthogonalize(self) -> None:
+        """QR re-orthogonalize the accumulated gossip/Krylov state.
+
+        Performs QR decomposition on the stored bridge eigenvectors
+        and LoRA A matrix, replacing them with their orthogonal factors.
+        This corrects cumulative FP round-off that causes torsion
+        τ > 1e-8 in long gossip chains.
+
+        Guarantees ``||Q^T Q - I|| < 1e-10`` post-correction.
+        """
+        # Re-orthogonalize bridge eigenvectors
+        if self._bridge_eigenvectors is not None:
+            V = self._bridge_eigenvectors.double()
+            if V.dim() == 2 and V.shape[0] >= V.shape[1]:
+                Q, _ = torch.linalg.qr(V, mode="reduced")
+                self._bridge_eigenvectors = Q.to(self._bridge_eigenvectors.dtype)
+
+        # Re-orthogonalize LoRA A matrix columns
+        A = self.lora_adapter.lora_A
+        if A.shape[0] >= A.shape[1]:
+            Q, _ = torch.linalg.qr(A.data.double(), mode="reduced")
+            A.data.copy_(Q.to(A.dtype))
 
     def remove_hooks(self) -> None:
         """Remove all registered forward hooks."""

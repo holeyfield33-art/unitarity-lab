@@ -363,6 +363,54 @@ class HawkingFluxGovernor:
         """Norms of all applied kicks (distance from identity)."""
         return list(self._kick_history)
 
+    def apply_kick_multihead(
+        self,
+        weights: torch.Tensor,
+        head_dim: int,
+        head_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """Apply GOE kicks only to heads selected by ``head_mask``.
+
+        Parameters
+        ----------
+        weights : Tensor of shape ``(num_heads, dim, dim)``
+            Per-head weight matrices.
+        head_dim : int
+            Dimension of each head's subspace.
+        head_mask : Tensor of shape ``(num_heads,)``, dtype bool, optional
+            If provided, only kick heads where ``mask[h] == True``.
+            When None, all heads are kicked.
+
+        Returns
+        -------
+        weights : Tensor — same shape, with kicked heads updated in-place.
+        """
+        num_heads = weights.shape[0]
+        if head_mask is not None:
+            active = head_mask.nonzero(as_tuple=True)[0]
+        else:
+            active = torch.arange(num_heads, device=weights.device)
+
+        if active.numel() == 0:
+            return weights
+
+        eps_eff = self.effective_epsilon
+        Hs = batch_goe(head_dim, active.numel(), weights.device)
+        kicks = batch_expm(Hs, eps_eff, use_taylor=head_dim > TAYLOR_DIM_THRESHOLD).float()
+
+        for i, h in enumerate(active.tolist()):
+            weights[h] = kicks[i] @ weights[h]
+
+        # Record and decay
+        I = torch.eye(head_dim, device=weights.device).unsqueeze(0)
+        norms = (kicks - I).norm(dim=(-2, -1))
+        for n_val in norms.tolist():
+            self._kick_history.append(n_val)
+        self.epsilon *= self.decay_rate
+        self._step_counter += 1
+        self.invalidate_cache()
+        return weights
+
     def diagnostics(self) -> dict:
         """Return flux governor diagnostics."""
         return {
