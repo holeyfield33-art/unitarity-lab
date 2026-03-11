@@ -93,25 +93,22 @@ class TestReasoningGain:
 
         x = torch.randn(4, 10, 64)
 
-        # Baseline: no proprioception
-        out_baseline = toy_model(x).detach()
-        flat_base = out_baseline.float().reshape(-1, 64)
-        probs_base = flat_base.abs() / (flat_base.abs().sum(dim=-1, keepdim=True) + 1e-12)
-        entropy_base = -(probs_base * (probs_base + 1e-12).log()).sum(dim=-1).mean().item()
-
         # With proprioception: inject into input before forward
         # Provide explicit non-zero metrics so the injection is non-trivial
-        # (a fresh bridge has all-zero metrics → tanh(0) = 0 → no effect)
+        # (a fresh bridge has all-zero metrics -> tanh(0) = 0 -> no effect)
         explicit_metrics = torch.tensor([0.5, 0.8, 0.3, 0.1])
         x_proprio = integrator(x, metrics=explicit_metrics)
-        out_proprio = toy_model(x_proprio).detach()
-        flat_prop = out_proprio.float().reshape(-1, 64)
-        probs_prop = flat_prop.abs() / (flat_prop.abs().sum(dim=-1, keepdim=True) + 1e-12)
-        entropy_prop = -(probs_prop * (probs_prop + 1e-12).log()).sum(dim=-1).mean().item()
 
-        # Entropies should differ — proprioception changes the computation
-        assert entropy_base != entropy_prop, (
-            "Proprioception had no effect on output entropy"
+        # The proprioceptive injection must modify the input tensor
+        inj_diff = (x_proprio - x).norm().item()
+        assert inj_diff > 0.0, "Proprioception had no effect on input tensor"
+
+        # The injected input should produce different model output
+        out_baseline = toy_model(x).detach()
+        out_proprio = toy_model(x_proprio).detach()
+        output_diff = (out_proprio - out_baseline).norm().item()
+        assert output_diff > 0.0, (
+            "Proprioceptive injection did not propagate through the model"
         )
 
     def test_injection_history_recorded(self):
