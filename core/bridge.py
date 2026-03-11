@@ -1,6 +1,6 @@
 """
-bridge.py — The Entanglement Bridge (v1.4 Superfluid)
-=====================================================
+bridge.py — The Entanglement Bridge (v1.5 Mirror)
+==================================================
 Cross-Layer Entanglement Hook with **LoRA (Rank=8)** adaptation
 and **Hawking Flux Governor** for loop-breaking.
 
@@ -48,6 +48,7 @@ from .flux import (
     STAGGER_FRACTION,
 )
 from .horizons import _lanczos_tridiagonal
+from .mirror import EigenConsciousnessIntegrator, ProprioceptiveHook, TopologicalGate
 
 
 # ======================================================================
@@ -155,6 +156,11 @@ class CrossLayerEntanglementHook:
             epsilon=flux_epsilon,
         )
 
+        # Mirror Integration (v1.5) — topological proprioception
+        self.mirror = EigenConsciousnessIntegrator(
+            bridge=self, hidden_dim=d_model, alpha=coupling_strength,
+        )
+
         # Internal state
         self._source_activation: Optional[torch.Tensor] = None
         self._bridge_eigenvectors: Optional[torch.Tensor] = None
@@ -230,6 +236,10 @@ class CrossLayerEntanglementHook:
 
         # Hawking Flux: check for stagnation and apply kick if needed
         self._maybe_apply_flux_kick()
+
+        # Mirror Integration (v1.5): apply proprioceptive injection
+        if hasattr(self, 'mirror') and self._enabled:
+            biased = self.mirror(biased)
 
         if isinstance(output, (tuple, list)):
             return (biased, *output[1:])
@@ -503,7 +513,7 @@ class CrossLayerEntanglementHook:
 
     def diagnostics(self) -> Dict[str, object]:
         """Return bridge diagnostics for the unitary regulator."""
-        return {
+        diag = {
             "bell_correlation": self._bell_correlation,
             "bell_history_len": len(self._bell_history),
             "spectral_gap": self.spectral_gap(),
@@ -522,6 +532,9 @@ class CrossLayerEntanglementHook:
             "stagger_fraction": STAGGER_FRACTION,
             "enabled": self._enabled,
         }
+        if hasattr(self, 'mirror'):
+            diag["mirror"] = self.mirror.diagnostics()
+        return diag
 
     def remove_hooks(self) -> None:
         """Remove all registered forward hooks."""

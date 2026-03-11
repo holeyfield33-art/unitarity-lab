@@ -1,9 +1,14 @@
-# Holeyfield v1.4-superfluid — Parallel Flux Certified (Production)
-# TMRP Session 26 Superfluid Deployment | 21x Latency Reduction | 1.8GB VRAM Guard
+# Holeyfield v1.5-mirror — Topological Proprioception (Production)
+# TMRP Session 27 Mirror Integration | 128b << 12kb R_max | α=0.1 operating point
 
 from .pll_monitor import PLLMonitor, SpectralAnomaly
 from .horizons import PageCurveHook, singularity_warning, _lanczos_tridiagonal, _rayleigh_quotient_iteration
 from .casimir_opt import CasimirOptimizer, rsvd
+from .mirror import (
+    ProprioceptiveHook, TopologicalGate, EigenConsciousnessIntegrator,
+    DEFAULT_ALPHA, CATASTROPHE_ALPHA, NUM_METRIC_CHANNELS,
+    holographic_bound, actual_bit_rate, HOLOGRAPHIC_SAFETY_FACTOR,
+)
 from .bridge import CrossLayerEntanglementHook, LoRABridgeAdapter, PROJECTION_NORM_MIN, PROJECTION_NORM_MAX
 from .flux import (
     HawkingFluxGovernor, HAWKING_DECAY_RATE,
@@ -30,6 +35,15 @@ __all__ = [
     "STAGGER_FRACTION",
     "TAYLOR_DIM_THRESHOLD",
     "TAYLOR_ERROR_GUARD",
+    "ProprioceptiveHook",
+    "TopologicalGate",
+    "EigenConsciousnessIntegrator",
+    "DEFAULT_ALPHA",
+    "CATASTROPHE_ALPHA",
+    "NUM_METRIC_CHANNELS",
+    "holographic_bound",
+    "actual_bit_rate",
+    "HOLOGRAPHIC_SAFETY_FACTOR",
     "singularity_warning",
     "wormhole_gap_alert",
     "WORMHOLE_GAP_THRESHOLD",

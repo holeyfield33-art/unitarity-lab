@@ -23,6 +23,10 @@ Verifies core invariants of the Holeyfield v1.2-stable Framework:
  19. (v1.3-certified) SVD Preservation — kick preserves singular value spectrum.
  20. (v1.3-certified) Rectangular Kick — non-square QKV/FFN support.
  21. (v1.3-certified) Bell Correlation Recovery — finite post-kick correlation.
+ 22. (v1.4) vmap Unitarity Stress Test — batch GOE orthogonality.
+ 23. (v1.4) Head RMT Diversity Test — Betti variance across heads.
+ 24. (v1.4) Parallel Zeno Scaling — Heisenberg √N confirmation.
+ 25. (v1.5) Mirror Integration — topological proprioception (see test_mirror.py).
 """
 
 from __future__ import annotations
