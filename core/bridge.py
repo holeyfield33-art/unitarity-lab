@@ -396,6 +396,15 @@ class CrossLayerEntanglementHook:
     # Public API
     # ------------------------------------------------------------------
     @property
+    def regulator(self):
+        """Expose the UnitaryRegulator linked to the flux governor.
+
+        Used by EigenConsciousnessIntegrator to access measurement_freq
+        without importing unitary_regulator (duck typing, no direct import).
+        """
+        return self.flux_governor.regulator
+
+    @property
     def bell_correlation(self) -> float:
         """Latest measured Bell correlation between source and sink."""
         return self._bell_correlation

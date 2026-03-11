@@ -226,6 +226,15 @@ class UnitaryRegulator:
         self._reports: List[RegulatorReport] = []
         self._current_measurement_freq: float = base_measurement_freq
 
+    @property
+    def measurement_freq(self) -> float:
+        """Current adaptive measurement frequency (updated each report).
+
+        Exposed so EigenConsciousnessIntegrator can access the real Zeno
+        signal without importing unitary_regulator (duck typing).
+        """
+        return self._current_measurement_freq
+
     def report(
         self,
         step: int,
