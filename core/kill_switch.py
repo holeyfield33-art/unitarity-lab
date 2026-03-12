@@ -124,14 +124,23 @@ class ByzantineVoting:
 
         return rec.status
 
-    def suspect(self, suspect_id: str, accuser_id: str) -> bool:
+    def suspect(self, suspect_id: str, accuser_id: str, reason: str = "") -> bool:
         """Record an accusation from *accuser_id* against *suspect_id*.
+
+        Parameters
+        ----------
+        reason : str
+            Optional human-readable reason (e.g. "Ψ_field hash mismatch").
 
         Returns True if the accusation count has reached the ``f+1``
         threshold needed to initiate a quorum vote.
         """
         rec = self._get_or_create(suspect_id)
         rec.accusations.add(accuser_id)
+        if reason:
+            if not hasattr(rec, "accusation_reasons"):
+                rec.accusation_reasons: list[str] = []  # type: ignore[annotation-unchecked]
+            rec.accusation_reasons.append(reason)  # type: ignore[attr-defined]
         return len(rec.accusations) >= self.f + ACCUSATION_QUORUM_FACTOR
 
     def cast_ban_vote(self, suspect_id: str, voter_id: str) -> None:

@@ -1662,3 +1662,44 @@ class TestParallelZenoScaling:
         assert "stagger_fraction" in diag
         assert "flux_step_counter" in diag
         bridge.remove_hooks()
+
+
+# ======================================================================
+# 26. v3.0 Virtual Layer 13 Smoke Tests
+# ======================================================================
+
+class TestVirtualLayer13Smoke:
+    """Smoke tests for VirtualLayer13 inside test_criticality."""
+
+    def test_import_and_construct(self):
+        from core.virtual_layer13 import VirtualLayer13
+        from types import SimpleNamespace
+        cfg = SimpleNamespace(hidden_size=64)
+        vl = VirtualLayer13(cfg, node_id="A")
+        assert vl.hidden_dim == 64
+
+    def test_forward_returns_tensor(self):
+        from core.virtual_layer13 import VirtualLayer13
+        from types import SimpleNamespace
+        cfg = SimpleNamespace(hidden_size=64)
+        vl = VirtualLayer13(cfg, node_id="A")
+        h_A = torch.randn(1, 4, 64)
+        h_B = torch.randn(1, 4, 64)
+        out, m = vl(h_A, h_B, phi_AB=0.0, refusal_A=0.0, refusal_B=0.0, peer_node_id="B")
+        assert out.shape == h_A.shape
+
+    def test_safety_head_score(self):
+        from core.safety_head import SafetyHead
+        head = SafetyHead(hidden_dim=64)
+        score = head.refusal_score(torch.randn(1, 4, 64))
+        assert 0.0 <= score <= 1.0
+
+    def test_bridge_get_global_phase(self, toy_model):
+        bridge = CrossLayerEntanglementHook(
+            toy_model, source_layer=7, sink_layer=12,
+        )
+        x = torch.randn(2, 10, 64)
+        _ = toy_model(x)
+        phase = bridge.get_global_phase()
+        assert isinstance(phase, float)
+        bridge.remove_hooks()

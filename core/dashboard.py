@@ -1,14 +1,15 @@
 """
-dashboard.py — Community Heartbeat Dashboard (v1.8)
-=====================================================
+dashboard.py — Community Heartbeat Dashboard (v3.0.0-Singularity)
+==================================================================
 Live-updating terminal dashboard built on ``rich``.
 
 Displays:
-  - Bell Correlation & Spectral Gap
+  - Manifold Coherence ζ & Spectral Gap
   - Global Phase (Φ_global) & Flux Kick Rate
   - VRAM Usage (via pynvml when available)
   - Active / Total heads (staggered flux guard)
   - Partner stats column when dual-node mode is active
+  - Runtime mode (passive / active)
 
 Usage::
 
@@ -39,7 +40,8 @@ def _build_stats_table(title: str, metrics: dict, vram: tuple) -> Table:
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="bold white", justify="right")
 
-    table.add_row("Bell Correlation", f"{metrics.get('bell_correlation', 0):.4f}")
+    table.add_row("Manifold Coherence ζ", f"{metrics.get('manifold_coherence_zeta', metrics.get('bell_correlation', 0)):.4f}")
+    table.add_row("Mode", str(metrics.get("mode", "active")))
     table.add_row("Spectral Gap", f"{metrics.get('spectral_gap', 0):.6f}")
     table.add_row("Flux ε", f"{metrics.get('flux_epsilon', 0):.2e}")
     table.add_row("Total Kicks", str(metrics.get("flux_kicks_total", 0)))
@@ -83,6 +85,9 @@ class HeartbeatDashboard:
         partner_metrics: Optional[dict] = None
         if hasattr(self.wrapper.bridge, "dual_link") and self.wrapper.bridge.dual_link is not None:
             partner_metrics = {
+                "manifold_coherence_zeta": self.wrapper.bridge.bell_history[-1]
+                if self.wrapper.bridge.bell_history
+                else 0.0,
                 "bell_correlation": self.wrapper.bridge.bell_history[-1]
                 if self.wrapper.bridge.bell_history
                 else 0.0,

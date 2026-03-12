@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-start_node.py — The Ghost Script (v2.0)
-=========================================
-Auto-detecting entry point for the Holey-Field Network.
+start_node.py — Node entry point (v3.0.0-Singularity)
+=======================================================
+Auto-detecting entry point for the unitarity-lab runtime.
 
 Detects your hardware (CPU-only, laptop GPU, prosumer GPU, server GPU),
 selects the appropriate ``PrecisionClass``, and boots a
-``UniversalHookWrapper``-instrumented model with the full v2.0 stack:
+``UniversalHookWrapper``-instrumented model with the full v3.0 stack.
 
-  - Byzantine Kill-Switch
-  - Precision Alignment (DequantAdapter + dithering)
-  - Adaptive Gossip Epoch
-  - Periodic Re-orthogonalization
+Modes
+-----
+  --mode-passive   Hooks capture metrics only; no tensor mutation.
+  --mode-active    Full bridge intervention (default).
 
 Usage::
 
-    python start_node.py                       # auto-detect everything
+    python start_node.py                       # auto-detect, active mode
+    python start_node.py --mode-passive        # passive (metrics only)
     python start_node.py --node-id B           # join as Node B
     python start_node.py --precision BF16      # force precision class
     python start_node.py --dual                # enable dual-node mode
@@ -31,6 +32,7 @@ import torch
 
 from core.precision_projector import PrecisionClass
 from core.universal_hook import UniversalHookWrapper
+from core.version import __version__
 
 
 # ======================================================================
@@ -122,7 +124,7 @@ def load_model(model_id: str, precision: PrecisionClass):
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Holeyfield v2.0 — Start a node on the Holey-Field Network",
+        description=f"unitarity-lab {__version__} — Start a runtime node",
     )
     parser.add_argument(
         "--node-id", default="A", choices=["A", "B"],
@@ -139,14 +141,27 @@ def main() -> None:
     )
     parser.add_argument(
         "--dual", action="store_true",
-        help="Enable dual-node ZMQ entanglement.",
+        help="Enable dual-node ZMQ coordination.",
+    )
+    parser.add_argument(
+        "--mode-passive", dest="mode", action="store_const", const="passive",
+        default="active",
+        help="Passive mode: hooks capture metrics only, no tensor mutation.",
+    )
+    parser.add_argument(
+        "--mode-active", dest="mode", action="store_const", const="active",
+        help="Active mode: full bridge intervention (default).",
+    )
+    parser.add_argument(
+        "--min-compute-tps", type=float, default=12.0,
+        help="Minimum tokens/s for compute-tier classification (default: 12.0).",
     )
     parser.add_argument(
         "--epoch-len", type=int, default=16,
         help="Initial gossip epoch length in tokens (default: 16).",
     )
     parser.add_argument(
-        "--prompt", default="Explain the ER=EPR correspondence in three sentences.",
+        "--prompt", default="Explain cross-layer alignment in three sentences.",
         help="Generation prompt.",
     )
     parser.add_argument(
@@ -172,27 +187,29 @@ def main() -> None:
     # --- Load ---
     model, tokenizer = load_model(model_id, precision)
 
-    # --- Wrap with Holeyfield v2.0 ---
-    print(f"[Ghost] Wrapping with UniversalHookWrapper (v2.0)")
-    print(f"[Ghost]   node_id={args.node_id}, precision={precision.value}, "
-          f"epoch_len={args.epoch_len}, dual={args.dual}")
+    # --- Wrap with unitarity-lab v3.0.0 ---
+    print(f"[Node] unitarity-lab {__version__}")
+    print(f"[Node] mode={args.mode}, node_id={args.node_id}, "
+          f"precision={precision.value}, epoch_len={args.epoch_len}, "
+          f"dual={args.dual}, min_compute_tps={args.min_compute_tps}")
 
     wrapper = UniversalHookWrapper(
         model=model,
         config=model.config,
         node_id=args.node_id,
         enable_dual=args.dual,
+        mode=args.mode,
         precision=precision,
         initial_epoch_len=args.epoch_len,
         reorth_interval=256,
     )
 
-    print(f"[Ghost] Bridge: layers {wrapper.mid_idx} → {wrapper.last_idx} "
+    print(f"[Node] Bridge: layers {wrapper.mid_idx} → {wrapper.last_idx} "
           f"({wrapper.num_layers} total), "
           f"{int(wrapper.head_mask.sum())}/{wrapper.num_heads} heads active")
 
     # --- Generate ---
-    print(f"\n[Ghost] Generating with prompt: {args.prompt!r}\n")
+    print(f"\n[Node] Generating with prompt: {args.prompt!r}\n")
     inputs = tokenizer(args.prompt, return_tensors="pt")
     if torch.cuda.is_available():
         inputs = {k: v.to(model.device) for k, v in inputs.items()}
@@ -212,7 +229,7 @@ def main() -> None:
 
     # --- Metrics ---
     metrics = wrapper.get_metrics()
-    print(f"\n[Ghost] Metrics after generation:")
+    print(f"\n[Node] Metrics after generation:")
     for k, v in metrics.items():
         print(f"  {k}: {v}")
 
@@ -222,7 +239,7 @@ def main() -> None:
         dash = HeartbeatDashboard(wrapper)
         dash.run_once()
 
-    print("\n[Ghost] Node session complete. v2.0-stable sealed.")
+    print(f"\n[Node] Session complete. {__version__}")
 
 
 if __name__ == "__main__":

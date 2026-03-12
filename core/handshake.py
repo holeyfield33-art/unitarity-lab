@@ -165,3 +165,18 @@ def validate_precision_pair(
 ) -> bool:
     """Quick check: can these two precisions communicate (directly or via projector)?"""
     return has_projector(local, remote) and has_projector(remote, local)
+
+
+def compute_capability_ratio(
+    local_capability: Optional[float],
+    remote_capability: Optional[float],
+) -> float:
+    """Compute capability ratio (remote / local) for VirtualLayer13.
+
+    Returns 1.0 when either value is missing or zero.
+    """
+    if local_capability is None or remote_capability is None:
+        return 1.0
+    if local_capability <= 0:
+        return 1.0
+    return remote_capability / local_capability

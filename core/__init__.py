@@ -1,6 +1,10 @@
-# Holeyfield v1.7-unitary-link — Inter-Model ER=EPR (Production)
-# TMRP Session 27 Mirror Integration | 128b << 12kb R_max | α=0.1 operating point
+# unitarity-lab v3.0.0-Singularity — TMRP-13 hardening pass
+# Experimental multi-model runtime for transformer instrumentation,
+# latent alignment tracing, distributed coordination, and optional intervention.
 
+from .version import __version__
+from .metrics import manifold_coherence_zeta, baseline_cosine_meanpool, permutation_test_zeta
+from .diversity_snapshot import DiversitySnapshotMonitor
 from .pll_monitor import PLLMonitor, SpectralAnomaly
 from .horizons import PageCurveHook, singularity_warning, _lanczos_tridiagonal, _rayleigh_quotient_iteration
 from .casimir_opt import CasimirOptimizer, rsvd
@@ -27,6 +31,7 @@ from .precision_projector import (
 from .handshake import (
     perform_handshake, validate_precision_pair,
     IncompatibleNode, HandshakeTimeout,
+    compute_capability_ratio,
 )
 from .kill_switch import (
     ByzantineVoting, NodeStatus, NodeRecord,
@@ -35,6 +40,11 @@ from .kill_switch import (
 from .universal_hook import UniversalHookWrapper
 from .ghost_layer import RecursiveMirror
 from .dashboard import HeartbeatDashboard
+from .virtual_layer13 import VirtualLayer13
+from .safety_head import SafetyHead
+# ChronosLock: distributed-only subsystem.  Imported here for backward
+# compatibility but NOT required for single-node operation.  Canonical
+# entry point for distributed code: ``from dist.chronos_lock import ...``
 from .chronos_lock import (
     ChronosLock,
     TPS_CLIP_MIN,
@@ -70,6 +80,11 @@ from .semantic_lock import (
 )
 
 __all__ = [
+    "__version__",
+    "manifold_coherence_zeta",
+    "baseline_cosine_meanpool",
+    "permutation_test_zeta",
+    "DiversitySnapshotMonitor",
     "PLLMonitor",
     "SpectralAnomaly",
     "PageCurveHook",
@@ -156,4 +171,7 @@ __all__ = [
     "PROBATION_TOKEN_PENALTY",
     "TIMESTAMP_GOSSIP_INTERVAL",
     "ENTROPY_DRIFT_LIMIT",
+    "VirtualLayer13",
+    "SafetyHead",
+    "compute_capability_ratio",
 ]

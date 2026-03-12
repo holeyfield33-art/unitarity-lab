@@ -1,9 +1,17 @@
 """
-universal_hook.py — Universal Hugging Face Wrapper (v1.8)
-=========================================================
+universal_hook.py — Universal Hugging Face Wrapper (v3.0.0-Singularity)
+========================================================================
 Safe, non-invasive hooks for any ``AutoModelForCausalLM``.
 
-v1.8 features:
+Modes
+-----
+  - **passive**: Hooks capture metrics (ζ, spectral gap, VRAM) without
+    mutating any tensor. Bridge bias injection, LoRA mutation, flux
+    kicks, and mirror injection are all disabled.
+  - **active**: Full intervention — bridge bias, LoRA, flux governor,
+    and mirror injection operate as in previous releases.
+
+Key features:
   - **Staggered Flux Guard**: 25% of attention heads entangled per step,
     rotating every ``head_rotate_steps`` to cap VRAM and FLOPs.
   - **Portable layer discovery**: ``model.model.layers``, ``model.layers``,
@@ -18,6 +26,7 @@ v1.8 features:
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from typing import Dict, List, Optional, Tuple
 
@@ -29,6 +38,11 @@ from .dual_link import register_dual_node_hook
 from .precision_projector import PrecisionClass
 from .handshake import perform_handshake, validate_precision_pair, IncompatibleNode
 from .ghost_layer import RecursiveMirror
+from .virtual_layer13 import VirtualLayer13
+from .safety_head import SafetyHead
+
+_VALID_MODES = ("passive", "active")
+_log = logging.getLogger(__name__)
 
 
 class UniversalHookWrapper:
@@ -44,6 +58,9 @@ class UniversalHookWrapper:
         ``"A"`` or ``"B"`` for dual-node mode.
     enable_dual : bool
         Attach ZeroMQ dual-node hook when True.
+    mode : str
+        ``"passive"`` — hooks capture metrics only, no tensor mutation.
+        ``"active"``  — full bridge intervention (default).
     flux_ratio : float
         Fraction of heads actively entangled (default 0.25).
     head_rotate_steps : int
@@ -56,12 +73,17 @@ class UniversalHookWrapper:
         config,
         node_id: str = "A",
         enable_dual: bool = False,
+        mode: str = "active",
         flux_ratio: float = 0.25,
         head_rotate_steps: int = 50,
         precision: PrecisionClass = PrecisionClass.BF16,
         initial_epoch_len: int = 16,
         reorth_interval: int = 256,
     ):
+        if mode not in _VALID_MODES:
+            raise ValueError(f"mode must be one of {_VALID_MODES}, got {mode!r}")
+        self.mode = mode
+        _log.info("UniversalHookWrapper mode=%s", mode)
         self.model = model
         self.config = config
         self.enable_dual = enable_dual
@@ -90,6 +112,11 @@ class UniversalHookWrapper:
             layer_accessor=lambda _m: self.layers,
         )
 
+        # Passive mode: disable bridge tensor mutation while still
+        # capturing source activations for metric computation.
+        if self.mode == "passive":
+            self.bridge.enabled = False
+
         # Head-staggering mask
         self.head_mask = torch.zeros(self.num_heads, dtype=torch.bool)
         self._rotate_heads()
@@ -107,6 +134,8 @@ class UniversalHookWrapper:
                 self.bridge.dual_link.precision = precision
                 self.bridge.dual_link.epoch_len = initial_epoch_len
                 self.bridge.dual_link._reorth_interval = reorth_interval
+                # v3.0: Attach VirtualLayer13 + SafetyHead to dual link
+                self.bridge.dual_link.attach_virtual_layer13(config, node_id)
             for idx in (self.mid_idx, self.last_idx):
                 self.layers[idx].register_forward_hook(
                     partial(self.dual_hook, layer_idx=idx)
@@ -165,14 +194,15 @@ class UniversalHookWrapper:
         """Forward pass through the wrapped model.
 
         Hooks fire automatically via PyTorch; head mask rotates every
-        ``head_rotate_steps`` steps.
+        ``head_rotate_steps`` steps.  In passive mode, rotation and
+        re-orthogonalization are skipped.
         """
         self.step_counter += 1
-        if self.step_counter % self.head_rotate_steps == 0:
-            self._rotate_heads()
-        # v2.0: Periodic re-orthogonalization from bridge
-        if self.step_counter % self.reorth_interval == 0:
-            self.bridge.reorthogonalize()
+        if self.mode == "active":
+            if self.step_counter % self.head_rotate_steps == 0:
+                self._rotate_heads()
+            if self.step_counter % self.reorth_interval == 0:
+                self.bridge.reorthogonalize()
         return self.model(*args, **kwargs)
 
     # ------------------------------------------------------------------
@@ -181,7 +211,9 @@ class UniversalHookWrapper:
     def get_metrics(self) -> Dict[str, object]:
         """Collect current bridge/flux metrics for the dashboard."""
         metrics = {
-            "bell_correlation": self.bridge.bell_correlation,
+            "mode": self.mode,
+            "manifold_coherence_zeta": self.bridge.bell_correlation,
+            "bell_correlation": self.bridge.bell_correlation,  # back-compat alias
             "spectral_gap": self.bridge.spectral_gap(),
             "flux_epsilon": self.bridge.flux_governor.epsilon,
             "flux_kicks_total": len(self.bridge.flux_governor.kick_history),

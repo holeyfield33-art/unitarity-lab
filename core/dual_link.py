@@ -1,17 +1,17 @@
 """
-dual_link.py — Inter-Model ER=EPR Bridge (v1.7 Unitary Upgrade)
-================================================================
-Cross-process entanglement between Model A ↔ Model B via ZeroMQ
+dual_link.py — Inter-Model ZMQ Bridge (v3.0.0-Singularity)
+============================================================
+Cross-process coordination between Model A ↔ Model B via ZeroMQ
 Pub/Sub with strict unitary (Householder) rotation injection.
 
-v1.7 features:
+Key features:
   - **ZeroMQ Pub/Sub**: Thread-safe cross-process on ports 5555/5556.
   - **SVD Low-Rank Compression**: ``torch.svd_lowrank(q=128)`` for
     universal dimensionality alignment of Krylov bases.
   - **Adversarial Resonance Buffer**: phi_AB > 0.95 triggers forced
     desync after 3 consecutive saturated steps.
   - **Unitary Householder Reflection**: U†U = I norm-preserving
-    rotation injection (replaces broken additive noise).
+    rotation injection.
   - **10ms Latency Guard**: stale partner messages discarded.
 """
 
@@ -34,10 +34,12 @@ from .precision_projector import (
 from .kill_switch import ByzantineVoting, NodeStatus
 from .ghost_layer import RecursiveMirror
 from .chronos_lock import ChronosLock
+from .virtual_layer13 import VirtualLayer13
+from .safety_head import SafetyHead
 
 
 class DualNodeEntanglementBridge:
-    """Model A ↔ Model B: Unitary cross-process entanglement.
+    """Model A ↔ Model B: Cross-process coordination bridge.
 
     Parameters
     ----------
@@ -100,6 +102,14 @@ class DualNodeEntanglementBridge:
         # --- v2.3: Chronos Lock (temporal hardening) ---
         self.chronos = ChronosLock(node_id=node_id)
         self._last_step_time: float = 0.0
+
+        # --- v3.0: Virtual Layer 13 + Safety Head ---
+        self.virtual_layer13: Optional[VirtualLayer13] = None
+        self.safety_head: Optional[SafetyHead] = None
+
+        # v3.0: Buffers for hash / logit exchange
+        self._pending_psi_hashes: dict[str, str] = {}
+        self._pending_logits: dict[str, torch.Tensor] = {}
 
     # ------------------------------------------------------------------
     # Precision projector setup
@@ -360,6 +370,59 @@ class DualNodeEntanglementBridge:
     def maybe_timestamp_sync(self) -> bool:
         """v2.3: Return True if a timestamp gossip round is due."""
         return self.chronos.should_timestamp_sync()
+
+    # ------------------------------------------------------------------
+    # v3.0: Ψ_field hash exchange
+    # ------------------------------------------------------------------
+
+    def exchange_psi_hash(
+        self, peer_id: str, my_hash: str,
+    ) -> Optional[str]:
+        """Non-blocking exchange of Ψ_field hash with peer.
+
+        Stores the local hash so the peer can retrieve it, and returns
+        the peer's hash if already available.  Returns ``None`` when
+        the peer hash has not yet arrived.
+        """
+        self._pending_psi_hashes[self.node_id] = my_hash
+        return self._pending_psi_hashes.get(peer_id)
+
+    def receive_psi_hash(self, peer_id: str, peer_hash: str) -> None:
+        """Record a peer's Ψ_field hash (called from gossip receive)."""
+        self._pending_psi_hashes[peer_id] = peer_hash
+
+    # ------------------------------------------------------------------
+    # v3.0: Logit exchange
+    # ------------------------------------------------------------------
+
+    def exchange_logits(
+        self, peer_id: str, my_logits: torch.Tensor,
+    ) -> Optional[torch.Tensor]:
+        """Non-blocking logit exchange with peer.
+
+        Stores the local logits and returns the peer's logits if
+        available, otherwise ``None``.
+        """
+        self._pending_logits[self.node_id] = my_logits.detach()
+        return self._pending_logits.get(peer_id)
+
+    def receive_logits(self, peer_id: str, logits: torch.Tensor) -> None:
+        """Record a peer's logits (called from gossip receive)."""
+        self._pending_logits[peer_id] = logits.detach()
+
+    # ------------------------------------------------------------------
+    # v3.0: Attach Virtual Layer 13 + Safety Head
+    # ------------------------------------------------------------------
+
+    def attach_virtual_layer13(
+        self, config, node_id: str,
+        refusal_basis: Optional[torch.Tensor] = None,
+    ) -> None:
+        """Instantiate and attach VirtualLayer13 and SafetyHead."""
+        self.virtual_layer13 = VirtualLayer13(
+            config, node_id, refusal_basis=refusal_basis,
+        )
+        self.safety_head = SafetyHead(config.hidden_size)
 
     def close(self) -> None:
         """Clean shutdown of ZMQ sockets."""

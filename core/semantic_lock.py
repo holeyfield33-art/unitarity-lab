@@ -1,6 +1,6 @@
 """
-semantic_lock.py — v2.2 Non-Local Semantic Locking (Adversarial-Hardened)
-=========================================================================
+semantic_lock.py — Non-Local Semantic Locking (v3.0.0-Singularity)
+===================================================================
 Implements the Contrastive Random Projection + Topological Anchor
 system for geometric semantic alignment across heterogeneous nodes.
 
@@ -816,7 +816,7 @@ def semantic_modulation(
 # ======================================================================
 
 class SemanticLockController:
-    """Top-level controller for v2.2 Non-Local Semantic Locking.
+    """Top-level controller for Non-Local Semantic Locking.
 
     Integrates:
       - NonceCommitProtocol (multi-round commit)
@@ -958,3 +958,23 @@ class SemanticLockController:
         accusations = list(self.pending_accusations)
         self.pending_accusations.clear()
         return accusations
+
+    # ------------------------------------------------------------------
+    # v3.0: compute_alpha for VirtualLayer13
+    # ------------------------------------------------------------------
+
+    def compute_alpha(
+        self,
+        h_layer7: torch.Tensor,
+        h_layer12: torch.Tensor,
+    ) -> float:
+        """Return ensemble α_sem for use by VirtualLayer13.
+
+        This is the same dual-layer ensemble computation used
+        internally by ``step()``, exposed for direct query.
+        """
+        if not self._initialized or self.W_sem is None or self.anchor_k is None:
+            return 0.5  # neutral default
+        return compute_alpha_sem_ensemble(
+            h_layer7, h_layer12, self.anchor_k, self.W_sem,
+        )

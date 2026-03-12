@@ -1,6 +1,6 @@
 """
-casimir_opt.py — The Topological Pressure Optimizer (v1.1)
-===========================================================
+casimir_opt.py — The Topological Pressure Optimizer (v3.0.0-Singularity)
+=========================================================================
 Replaces standard Adam/SGD with a Casimir Pressure Optimizer.
 
 v1.1 — DeepSeek Integration:
@@ -189,11 +189,11 @@ def estimate_betti_0(weight: torch.Tensor, threshold: float = 0.1) -> int:
 
 
 # ======================================================================
-# CasimirOptimizer (v1.1)
+# CasimirOptimizer
 # ======================================================================
 
 class CasimirOptimizer(Optimizer):
-    """Topological Pressure Optimizer (Casimir variant) — v1.1.
+    """Topological Pressure Optimizer (Casimir variant).
 
     v1.1 additions:
       - ``_project_to_casimir`` uses **rSVD** for O(n² log k) projection.

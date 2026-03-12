@@ -208,7 +208,7 @@ def singularity_warning(activation: torch.Tensor) -> bool:
 # ======================================================================
 
 class PageCurveHook:
-    """Attaches to a HoleyfieldTransformer and tracks the Lyapunov profile.
+    """Attaches to a transformer model and tracks the Lyapunov profile.
 
     v1.1 uses **Lanczos tridiagonalization** + **Rayleigh Quotient Iteration**
     to estimate the spectral norm of each layer's Jacobian, replacing the
@@ -240,7 +240,7 @@ class PageCurveHook:
         Parameters
         ----------
         model : nn.Module
-            The HoleyfieldTransformer (or any nn.Module whose layers
+            The transformer model (any nn.Module whose layers
             should be monitored).
         pll : PLLMonitor
             The Phase-Locked Loop monitor that enforces the Page Curve.

@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-run_community.py — v1.8 Community Example
-==========================================
+run_community.py — Community Example (v3.0.0-Singularity)
+==========================================================
 Loads a 4-bit quantised Llama-3 model via ``unsloth`` (low-end GPU friendly),
 wraps it in the ``UniversalHookWrapper``, runs a single generation, and
 prints a heartbeat dashboard snapshot.
 
 Usage::
 
-    python run_community.py                   # default prompt
+    python run_community.py                        # default prompt, active mode
+    python run_community.py --mode-passive         # passive (metrics only)
     python run_community.py --prompt "Why is the sky blue?"
-    python run_community.py --dual             # enable dual-node mode
+    python run_community.py --dual                 # enable dual-node mode
 
 Requirements::
 
@@ -26,23 +27,34 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from core.universal_hook import UniversalHookWrapper
 from core.dashboard import HeartbeatDashboard
+from core.version import __version__
 
 
 DEFAULT_MODEL = "unsloth/Llama-3.2-1B-bnb-4bit"
-DEFAULT_PROMPT = (
-    "Explain the ER=EPR correspondence in three sentences."
-)
+DEFAULT_PROMPT = "Explain cross-layer alignment in three sentences."
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="v1.8 Community Runner")
+    parser = argparse.ArgumentParser(
+        description=f"unitarity-lab {__version__} — Community Runner",
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL, help="HF model id")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--dual", action="store_true", help="Enable dual-node mode")
+    parser.add_argument(
+        "--mode-passive", dest="mode", action="store_const", const="passive",
+        default="active",
+        help="Passive mode: hooks capture metrics only, no tensor mutation.",
+    )
+    parser.add_argument(
+        "--mode-active", dest="mode", action="store_const", const="active",
+        help="Active mode: full bridge intervention (default).",
+    )
     args = parser.parse_args()
 
-    print(f"[v1.8] Loading {args.model} …")
+    print(f"[Node] unitarity-lab {__version__}")
+    print(f"[Node] Loading {args.model} …")
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -55,11 +67,12 @@ def main() -> None:
         model=model,
         config=model.config,
         enable_dual=args.dual,
+        mode=args.mode,
         flux_ratio=0.25,
         head_rotate_steps=50,
     )
 
-    print(f"[v1.8] Bridge attached: layers {wrapper.mid_idx} → {wrapper.last_idx} "
+    print(f"[Node] mode={args.mode}, Bridge: layers {wrapper.mid_idx} → {wrapper.last_idx} "
           f"({wrapper.num_layers} total), {int(wrapper.head_mask.sum())}/"
           f"{wrapper.num_heads} heads active")
 

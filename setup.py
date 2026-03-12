@@ -1,25 +1,21 @@
-"""
-Holeyfield v2.0 — Byzantine Stability
-======================================
-Unitary Regulator for topological phase-transition inference.
-"""
+"""unitarity-lab v3.0.0-Singularity — Experimental multi-model runtime."""
 
 from setuptools import setup, find_packages
 
 setup(
     name="unitarity-lab",
-    version="2.3.0",
+    version="3.0.0-Singularity",
     description=(
-        "Holeyfield v2.3: Unitary Regulator with Byzantine Kill-Switch, "
-        "Chronos Lock Temporal Hardening, Precision Alignment, and "
-        "Adaptive Gossip Epoch for distributed topological inference."
+        "Experimental multi-model runtime for transformer instrumentation, "
+        "latent alignment tracing, distributed coordination, and optional "
+        "intervention."
     ),
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="holeyfield33-art",
     url="https://github.com/holeyfield33-art/unitarity-lab",
     license="MIT",
-    packages=find_packages(exclude=["tests", "tests.*"]),
+    packages=find_packages(exclude=["tests", "tests.*", "benchmarks", "benchmarks.*"]),
     python_requires=">=3.9",
     install_requires=[
         "torch>=2.0",
@@ -44,7 +40,7 @@ setup(
         ],
     },
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",

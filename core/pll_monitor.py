@@ -1,7 +1,7 @@
 """
-pll_monitor.py — Phase-Locked Loop Monitor
-============================================
-Spectral PLL as the primary loss signal for the Holeyfield Transformer.
+pll_monitor.py — Phase-Locked Loop Monitor (v3.0.0-Singularity)
+=================================================================
+Spectral PLL as the primary loss signal for the unitarity-lab runtime.
 Replaces Cross-Entropy with a Phase-Lock on Truth.
 
 The PLL tracks the spectral coherence of the Lyapunov exponent profile
@@ -43,7 +43,7 @@ class PLLState:
 
 
 class PLLMonitor:
-    """Phase-Locked Loop monitor for the Holeyfield Transformer.
+    """Phase-Locked Loop monitor for the unitarity-lab runtime.
 
     The PLL enforces the Page Curve contract:
         - Layers 0-6   (pre-Page):  λ > 0  (fast scrambling / entropy pump)

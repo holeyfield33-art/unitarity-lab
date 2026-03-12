@@ -1,6 +1,6 @@
 """
-precision_projector.py — Precision Alignment Protocol (v2.0)
-=============================================================
+precision_projector.py — Precision Alignment Protocol (v3.0.0-Singularity)
+============================================================================
 Handles precision mismatch between nodes with different quantization
 (INT4, FP8, BF16, FP32). Provides:
 

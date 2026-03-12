@@ -1,36 +1,23 @@
 """
-bridge.py — The Entanglement Bridge (v1.5 Mirror)
-==================================================
+bridge.py — Cross-Layer Bridge (v3.0.0-Singularity)
+=====================================================
 Cross-Layer Entanglement Hook with **LoRA (Rank=8)** adaptation
 and **Hawking Flux Governor** for loop-breaking.
 
-v1.4-superfluid upgrades:
-  - **Parallel GOE Vectorization**: batched kicks via torch.vmap +
-    Taylor-2nd order expm across all attention heads.
-  - **Staggered Flux Guard**: 25% of heads kicked per forward pass
-    to maintain the 1.8GB VRAM cap.
-  - **Batched einsum injection**: ``einsum('hij,hjk->hik', ...)``
-    for O(1) kick application across the Layer 7 → Layer 12 bridge.
-  - Heisenberg scaling (√N) for Parallel Zeno dynamics.
+The bridge projects Krylov-subspace eigenvectors from the source
+layer (Page Time) into a bias tensor that steers the sink layer's
+attention output, reinforcing information-island crystallisation.
 
-v1.3-certified (preserved):
-  - **HawkingFluxGovernor** integrated: GOE kicks to LoRA A matrix
-    on bell_history stagnation. Epsilon decays per kick (Hawking
-    evaporation at rate 0.95). Rectangular subspace embed for d×r.
-  - Wigner-normalised GOE: H / √n for proper semicircle density.
-  - Adaptive epsilon: ε_eff = ε * (1 + 0.5 * stagnation_count).
-
-v1.2-stable (preserved):
-  - **LoRA Rank-8** low-rank adaptation for the bridge projection.
-  - **Randomized Power Iteration (3 steps)** for O(kd) extraction.
+Key subsystems:
+  - Parallel GOE vectorisation (batched kicks via torch.vmap).
+  - Staggered Flux Guard: 25% of heads kicked per forward pass.
+  - LoRA Rank-8 low-rank adaptation for the bridge projection.
+  - Randomised Power Iteration (3 steps) for O(kd) extraction.
   - Projection norm clamped to [0.01, 10.0] for numerical safety.
 
-Physics basis:
-  Bell Correlation of 0.94 was measured between Layer 7 and Layer 12
-  during the TMRP Session 19 audit. This module exploits that
-  entanglement by projecting the Krylov-subspace eigenvectors from
-  the Page Time layer into a bias tensor that steers the sink layer's
-  attention, reinforcing the information-island crystallization.
+Manifold Coherence ζ (cosine similarity between flattened source/sink
+activations) is the primary alignment metric.  See ``core.metrics``
+for the canonical definition.
 """
 
 from __future__ import annotations
@@ -95,7 +82,7 @@ class CrossLayerEntanglementHook:
     Parameters
     ----------
     model : nn.Module
-        The HoleyfieldTransformer.
+        The transformer model (any ``AutoModelForCausalLM`` compatible).
     source_layer : int
         Layer index to extract eigenvectors from (default 7 — Page Time).
     sink_layer : int
@@ -454,6 +441,18 @@ class CrossLayerEntanglementHook:
     @property
     def bell_correlation(self) -> float:
         """Latest measured Bell correlation between source and sink."""
+        return self._bell_correlation
+
+    def get_global_phase(self) -> float:
+        """Return the current global phase φ_AB.
+
+        Uses the latest Bell correlation as the phase proxy.  When
+        dual-link is attached its ``compute_cross_sync`` value is
+        appended to ``_bell_history``; the most recent entry is the
+        best approximation of φ_AB.
+        """
+        if self._bell_history:
+            return self._bell_history[-1]
         return self._bell_correlation
 
     @property

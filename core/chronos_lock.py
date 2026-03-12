@@ -1,6 +1,7 @@
 """
-core/chronos_lock.py — v2.3 Temporal Synchronization with Hardened Defenses
-=============================================================================
+core/chronos_lock.py — Temporal Synchronization (v3.0.0-Singularity)
+=====================================================================
+Distributed-only subsystem. Not required for single-node operation.
 
 Provides:
 - Causal entrainment via velocity-normalized τ_sync
