@@ -1,17 +1,17 @@
 """
-dual_link.py — Inter-Model ZMQ Bridge (v3.0.0-Singularity)
-============================================================
-Cross-process coordination between Model A ↔ Model B via ZeroMQ
+dual_link.py — Inter-Model ER=EPR Bridge (v1.7 Unitary Upgrade)
+================================================================
+Cross-process entanglement between Model A ↔ Model B via ZeroMQ
 Pub/Sub with strict unitary (Householder) rotation injection.
 
-Key features:
+v1.7 features:
   - **ZeroMQ Pub/Sub**: Thread-safe cross-process on ports 5555/5556.
   - **SVD Low-Rank Compression**: ``torch.svd_lowrank(q=128)`` for
     universal dimensionality alignment of Krylov bases.
   - **Adversarial Resonance Buffer**: phi_AB > 0.95 triggers forced
     desync after 3 consecutive saturated steps.
   - **Unitary Householder Reflection**: U†U = I norm-preserving
-    rotation injection.
+    rotation injection (replaces broken additive noise).
   - **10ms Latency Guard**: stale partner messages discarded.
 """
 
@@ -24,22 +24,9 @@ import torch
 import torch.nn.functional as F
 import zmq
 
-from .precision_projector import (
-    CANONICAL_DTYPE,
-    DequantAdapter,
-    PrecisionClass,
-    add_dither,
-    get_projector,
-)
-from .kill_switch import ByzantineVoting, NodeStatus
-from .ghost_layer import RecursiveMirror
-from .chronos_lock import ChronosLock
-from .virtual_layer13 import VirtualLayer13
-from .safety_head import SafetyHead
-
 
 class DualNodeEntanglementBridge:
-    """Model A ↔ Model B: Cross-process coordination bridge.
+    """Model A ↔ Model B: Unitary cross-process entanglement.
 
     Parameters
     ----------
@@ -52,14 +39,7 @@ class DualNodeEntanglementBridge:
         Node B publishes on ``zmq_port + 1``.
     """
 
-    def __init__(
-        self,
-        node_id: str = "A",
-        krylov_dim: int = 128,
-        zmq_port: int = 5555,
-        precision: PrecisionClass = PrecisionClass.BF16,
-        epoch_len: int = 16,
-    ):
+    def __init__(self, node_id: str = "A", krylov_dim: int = 128, zmq_port: int = 5555):
         self.node_id = node_id
         self.krylov_dim = krylov_dim
 
@@ -82,170 +62,24 @@ class DualNodeEntanglementBridge:
         self.anti_resonance_threshold: float = 0.95
         self.latency_timeout: float = 0.010  # 10ms max
 
-        # --- v2.0: Precision Alignment ---
-        self.precision = precision
-        self.remote_precision: Optional[PrecisionClass] = None
-        self.projector_send: Optional[DequantAdapter] = None
-        self.projector_recv: Optional[DequantAdapter] = None
-
-        # --- v2.0: Adaptive Epoch ---
-        self.epoch_len: int = epoch_len
-        self._rtt_history: list[float] = []
-
-        # --- v2.0: Reorthogonalization counter ---
-        self._step_counter: int = 0
-        self._reorth_interval: int = 256
-
-        # --- v2.0: Byzantine Kill-Switch ---
-        self.voting = ByzantineVoting(max_faulty=1)
-
-        # --- v2.3: Chronos Lock (temporal hardening) ---
-        self.chronos = ChronosLock(node_id=node_id)
-        self._last_step_time: float = 0.0
-
-        # --- v3.0: Virtual Layer 13 + Safety Head ---
-        self.virtual_layer13: Optional[VirtualLayer13] = None
-        self.safety_head: Optional[SafetyHead] = None
-
-        # v3.0: Buffers for hash / logit exchange
-        self._pending_psi_hashes: dict[str, str] = {}
-        self._pending_logits: dict[str, torch.Tensor] = {}
-
-    # ------------------------------------------------------------------
-    # Precision projector setup
-    # ------------------------------------------------------------------
-    def set_remote_precision(
-        self, remote_precision: PrecisionClass, dim: int,
-    ) -> None:
-        """Configure send/recv projectors after handshake."""
-        self.remote_precision = remote_precision
-        self.projector_send = get_projector(self.precision, remote_precision, dim)
-        self.projector_recv = get_projector(remote_precision, self.precision, dim)
-
-    # ------------------------------------------------------------------
-    # Adaptive Epoch
-    # ------------------------------------------------------------------
-    def _adjust_epoch(self, rtt: float) -> None:
-        """Adapt epoch length based on measured RTT.
-
-        - RTT > 50ms  → double epoch_len (capped at 128).
-        - RTT < 30ms  → halve epoch_len (floored at 16).
-        """
-        self._rtt_history.append(rtt)
-        if rtt > 0.050:
-            self.epoch_len = min(128, self.epoch_len * 2)
-        elif rtt < 0.030:
-            self.epoch_len = max(16, self.epoch_len // 2)
-
-    # ------------------------------------------------------------------
-    # Send / Receive with precision handling
-    # ------------------------------------------------------------------
     def send_krylov_basis(self, krylov_basis: torch.Tensor) -> None:
-        """Compress, cast to BF16+dither, and transmit Krylov basis.
-
-        v2.3: Includes RS-encoded temporal shard and chain hash.
-        """
+        """Compress and transmit Krylov subspace via SVD low-rank."""
         U, _, _ = torch.svd_lowrank(krylov_basis.float(), q=self.krylov_dim)
-        # v2.0: Cast to canonical BF16 with dithering
-        U_dithered = add_dither(U, bits=16)
-
-        # v2.3: Measure step TPS
-        now = time.monotonic()
-        if self._last_step_time > 0:
-            dt = now - self._last_step_time
-            if dt > 0:
-                self.chronos.update_tps(1.0 / dt)
-        self._last_step_time = now
-
         msg = {
             'node': self.node_id,
-            'basis': U_dithered.cpu().float().numpy(),
-            'timestamp': now,
-            'precision': self.precision.value,
-            # v2.3: temporal shard + chain validation
-            'temporal_shard': self.chronos.encode_shard(),
-            'seq_pos': self.chronos.seq_pos,
-            'prev_τ_hash': self.chronos.prev_τ_hash,
+            'basis': U.cpu().numpy(),
+            'timestamp': time.monotonic(),
         }
         self.pub.send_pyobj(msg)
 
     def recv_partner_basis(self, device: str = "cpu") -> Optional[torch.Tensor]:
-        """Non-blocking partner receive with latency guard + precision projection.
-
-        v2.1: Validates received shard via spectral validation before use.
-        """
+        """Non-blocking partner receive with 10ms latency guard."""
         try:
             msg = self.sub.recv_pyobj(flags=zmq.DONTWAIT)
             latency = time.monotonic() - msg['timestamp']
-            # Adaptive epoch: measure RTT (approx as one-way latency × 2)
-            self._adjust_epoch(latency * 2)
             if latency > self.latency_timeout:
                 return None  # Desync guard
             basis = torch.tensor(msg['basis'], device=device)
-            # v2.0: Project received BF16 tensor to local precision
-            if self.projector_recv is not None:
-                self.projector_recv = self.projector_recv.to(device)
-                basis = self.projector_recv(basis)
-
-            # v2.1: Spectral shard validation (if metadata present)
-            shard_meta = msg.get('shard_metadata')
-            shard_hash = msg.get('shard_hash')
-            if shard_meta is not None:
-                valid, reason = RecursiveMirror.validate_shard(basis, shard_meta)
-                if not valid:
-                    remote_id = msg.get('node', 'unknown')
-                    self.voting.suspect(remote_id, self.node_id)
-                    return None  # Discard invalid shard
-            if shard_hash is not None:
-                actual_hash = RecursiveMirror.hash_shard(basis)
-                if actual_hash != shard_hash:
-                    remote_id = msg.get('node', 'unknown')
-                    self.voting.suspect(remote_id, self.node_id)
-                    return None  # Hash mismatch — discard
-
-            # v2.3: Chronos Lock — validate temporal shard
-            temporal_shard = msg.get('temporal_shard')
-            remote_seq = msg.get('seq_pos', 0)
-            remote_prev_hash = msg.get('prev_τ_hash')
-
-            if temporal_shard is not None:
-                try:
-                    seq, τ_remote, tps_remote, prev_hash, integral = (
-                        self.chronos.decode_shard(temporal_shard)
-                    )
-                except ValueError:
-                    # RS decode failed — shard corruption
-                    remote_id = msg.get('node', 'unknown')
-                    self.voting.suspect(remote_id, self.node_id)
-                    return None
-
-                # Sequence chain validation
-                if not self.chronos.validate_τ_chain(remote_prev_hash):
-                    accept, request_missing = self.chronos.handle_jump(
-                        self.chronos.seq_pos, remote_seq,
-                    )
-                    if not accept:
-                        return None  # sequence jump — wait for recovery
-
-                # Desync monitoring
-                τ_local = self.chronos.τ_history[-1] if self.chronos.τ_history else 0.0
-                Δτ = τ_local - τ_remote
-                if self.chronos.update_desync(Δτ):
-                    remote_id = msg.get('node', 'unknown')
-                    self.voting.suspect(remote_id, self.node_id)
-                    return None  # cumulative desync sever
-
-                # Probation check
-                if self.chronos.check_probation(Δτ):
-                    remote_id = msg.get('node', 'unknown')
-                    self.voting.report_beta(remote_id, 0.30)  # demote
-
-                # Update remote TPS
-                self.chronos.update_tps(tps_remote)
-
-                # Record τ for chain
-                self.chronos.record_τ(τ_remote)
-
             return basis
         except zmq.Again:
             return None
@@ -342,88 +176,6 @@ class DualNodeEntanglementBridge:
 
         return h_rotated.to(h_local.dtype)
 
-    def update_bridge_state(
-        self,
-        remote_node_id: str,
-        beta_tb: float,
-    ) -> NodeStatus:
-        """Evaluate kill-switch logic for a remote node via β_TB.
-
-        Integrates with the ByzantineVoting class to decide whether
-        to sever, degrade, or re-admit the remote link.
-        """
-        status, should_sever = self.voting.evaluate_bridge_state(
-            remote_node_id, beta_tb, self.node_id,
-        )
-        return status
-
-    def chronos_wait_spin(
-        self,
-        h: torch.Tensor,
-        Δτ: float,
-    ) -> torch.Tensor:
-        """v2.3: Apply unitary wait spin when local node is ahead."""
-        if Δτ <= 0:
-            return h
-        return self.chronos.unitary_wait_spin(h, Δτ)
-
-    def maybe_timestamp_sync(self) -> bool:
-        """v2.3: Return True if a timestamp gossip round is due."""
-        return self.chronos.should_timestamp_sync()
-
-    # ------------------------------------------------------------------
-    # v3.0: Ψ_field hash exchange
-    # ------------------------------------------------------------------
-
-    def exchange_psi_hash(
-        self, peer_id: str, my_hash: str,
-    ) -> Optional[str]:
-        """Non-blocking exchange of Ψ_field hash with peer.
-
-        Stores the local hash so the peer can retrieve it, and returns
-        the peer's hash if already available.  Returns ``None`` when
-        the peer hash has not yet arrived.
-        """
-        self._pending_psi_hashes[self.node_id] = my_hash
-        return self._pending_psi_hashes.get(peer_id)
-
-    def receive_psi_hash(self, peer_id: str, peer_hash: str) -> None:
-        """Record a peer's Ψ_field hash (called from gossip receive)."""
-        self._pending_psi_hashes[peer_id] = peer_hash
-
-    # ------------------------------------------------------------------
-    # v3.0: Logit exchange
-    # ------------------------------------------------------------------
-
-    def exchange_logits(
-        self, peer_id: str, my_logits: torch.Tensor,
-    ) -> Optional[torch.Tensor]:
-        """Non-blocking logit exchange with peer.
-
-        Stores the local logits and returns the peer's logits if
-        available, otherwise ``None``.
-        """
-        self._pending_logits[self.node_id] = my_logits.detach()
-        return self._pending_logits.get(peer_id)
-
-    def receive_logits(self, peer_id: str, logits: torch.Tensor) -> None:
-        """Record a peer's logits (called from gossip receive)."""
-        self._pending_logits[peer_id] = logits.detach()
-
-    # ------------------------------------------------------------------
-    # v3.0: Attach Virtual Layer 13 + Safety Head
-    # ------------------------------------------------------------------
-
-    def attach_virtual_layer13(
-        self, config, node_id: str,
-        refusal_basis: Optional[torch.Tensor] = None,
-    ) -> None:
-        """Instantiate and attach VirtualLayer13 and SafetyHead."""
-        self.virtual_layer13 = VirtualLayer13(
-            config, node_id, refusal_basis=refusal_basis,
-        )
-        self.safety_head = SafetyHead(config.hidden_size)
-
     def close(self) -> None:
         """Clean shutdown of ZMQ sockets."""
         self.pub.close()
@@ -453,27 +205,11 @@ def register_dual_node_hook(bridge: "CrossLayerEntanglementHook", node_id: str):
         eigvecs = bridge.bridge_eigenvectors
         if eigvecs is None:
             return output
-
-        # v2.0: Reorthogonalization every 256 steps
-        dual_bridge._step_counter += 1
-        if dual_bridge._step_counter % dual_bridge._reorth_interval == 0:
-            bridge.reorthogonalize()
-
         dual_bridge.send_krylov_basis(eigvecs)
         partner_basis = dual_bridge.recv_partner_basis(
             device=eigvecs.device.type,
         )
         phi_AB = dual_bridge.compute_cross_sync(eigvecs, partner_basis)
-
-        # v2.0: Kill-switch check (use phi_AB as β_TB proxy)
-        if partner_basis is not None:
-            remote_id = getattr(dual_bridge, '_remote_id', 'remote')
-            status = dual_bridge.update_bridge_state(remote_id, phi_AB)
-            if dual_bridge.voting.is_influence_nullified(remote_id):
-                # Nullify remote influence — return output unchanged
-                bridge._bell_history.append(phi_AB)
-                return output
-
         act = output[0] if isinstance(output, (tuple, list)) else output
         act = dual_bridge.unitary_rotation_inject(act, partner_basis, phi_AB)
         bridge._bell_history.append(phi_AB)

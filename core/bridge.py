@@ -1,23 +1,36 @@
 """
-bridge.py — Cross-Layer Bridge (v3.0.0-Singularity)
-=====================================================
+bridge.py — The Entanglement Bridge (v1.5 Mirror)
+==================================================
 Cross-Layer Entanglement Hook with **LoRA (Rank=8)** adaptation
 and **Hawking Flux Governor** for loop-breaking.
 
-The bridge projects Krylov-subspace eigenvectors from the source
-layer (Page Time) into a bias tensor that steers the sink layer's
-attention output, reinforcing information-island crystallisation.
+v1.4-superfluid upgrades:
+  - **Parallel GOE Vectorization**: batched kicks via torch.vmap +
+    Taylor-2nd order expm across all attention heads.
+  - **Staggered Flux Guard**: 25% of heads kicked per forward pass
+    to maintain the 1.8GB VRAM cap.
+  - **Batched einsum injection**: ``einsum('hij,hjk->hik', ...)``
+    for O(1) kick application across the Layer 7 → Layer 12 bridge.
+  - Heisenberg scaling (√N) for Parallel Zeno dynamics.
 
-Key subsystems:
-  - Parallel GOE vectorisation (batched kicks via torch.vmap).
-  - Staggered Flux Guard: 25% of heads kicked per forward pass.
-  - LoRA Rank-8 low-rank adaptation for the bridge projection.
-  - Randomised Power Iteration (3 steps) for O(kd) extraction.
+v1.3-certified (preserved):
+  - **HawkingFluxGovernor** integrated: GOE kicks to LoRA A matrix
+    on bell_history stagnation. Epsilon decays per kick (Hawking
+    evaporation at rate 0.95). Rectangular subspace embed for d×r.
+  - Wigner-normalised GOE: H / √n for proper semicircle density.
+  - Adaptive epsilon: ε_eff = ε * (1 + 0.5 * stagnation_count).
+
+v1.2-stable (preserved):
+  - **LoRA Rank-8** low-rank adaptation for the bridge projection.
+  - **Randomized Power Iteration (3 steps)** for O(kd) extraction.
   - Projection norm clamped to [0.01, 10.0] for numerical safety.
 
-Manifold Coherence ζ (cosine similarity between flattened source/sink
-activations) is the primary alignment metric.  See ``core.metrics``
-for the canonical definition.
+Physics basis:
+  Bell Correlation of 0.94 was measured between Layer 7 and Layer 12
+  during the TMRP Session 19 audit. This module exploits that
+  entanglement by projecting the Krylov-subspace eigenvectors from
+  the Page Time layer into a bias tensor that steers the sink layer's
+  attention, reinforcing the information-island crystallization.
 """
 
 from __future__ import annotations
@@ -82,7 +95,7 @@ class CrossLayerEntanglementHook:
     Parameters
     ----------
     model : nn.Module
-        The transformer model (any ``AutoModelForCausalLM`` compatible).
+        The HoleyfieldTransformer.
     source_layer : int
         Layer index to extract eigenvectors from (default 7 — Page Time).
     sink_layer : int
@@ -110,6 +123,7 @@ class CrossLayerEntanglementHook:
         flux_epsilon: float = 1e-4,
         num_heads: int = 32,
         layer_accessor: Optional[Callable[[nn.Module], nn.ModuleList]] = None,
+        d_model: Optional[int] = None,
     ):
         self.source_layer = source_layer
         self.sink_layer = sink_layer
@@ -132,8 +146,8 @@ class CrossLayerEntanglementHook:
             )
 
         # LoRA adapter for bridge projection (v1.2-stable)
-        # Infer d_model from first layer's parameters
-        d_model = self._infer_d_model()
+        # Use explicit d_model if provided, otherwise infer from parameters
+        d_model = d_model if d_model is not None else self._infer_d_model()
         self.lora_adapter = LoRABridgeAdapter(
             d_model=d_model, rank=lora_rank, alpha=coupling_strength
         )
@@ -149,9 +163,6 @@ class CrossLayerEntanglementHook:
             bridge=self, hidden_dim=d_model, alpha=coupling_strength,
         )
 
-        # Head mask for staggered flux (v1.8)
-        self._head_mask: Optional[torch.Tensor] = None
-
         # Internal state
         self._source_activation: Optional[torch.Tensor] = None
         self._bridge_eigenvectors: Optional[torch.Tensor] = None
@@ -161,36 +172,6 @@ class CrossLayerEntanglementHook:
         self._handles: list = []
 
         self._register_hooks()
-
-    # ------------------------------------------------------------------
-    # Head mask (v1.8 staggered flux)
-    # ------------------------------------------------------------------
-    def set_head_mask(self, mask: torch.Tensor) -> None:
-        """Set the boolean head mask for staggered entanglement.
-
-        Parameters
-        ----------
-        mask : Tensor of shape ``(num_heads,)`` — dtype ``torch.bool``.
-            Only heads where ``mask[h] == True`` receive the bridge signal.
-        """
-        self._head_mask = mask.to(self.lora_adapter.lora_A.device)
-
-    def _apply_head_mask(self, signal: torch.Tensor) -> torch.Tensor:
-        """Zero out bridge signal contributions for inactive heads.
-
-        Reshapes the last dimension into ``(num_heads, head_dim)``
-        and multiplies by the boolean mask, leaving inactive heads
-        with zero entanglement.
-        """
-        if self._head_mask is None:
-            return signal
-        d = signal.shape[-1]
-        head_dim = d // self.num_heads
-        if head_dim * self.num_heads != d:
-            return signal  # dimension mismatch — skip masking
-        mask_expanded = self._head_mask.repeat_interleave(head_dim).float()
-        # Broadcast: signal (..., d) * mask (d,)
-        return signal * mask_expanded
 
     def _infer_d_model(self) -> int:
         """Infer d_model from the first layer's parameters."""
@@ -240,9 +221,6 @@ class CrossLayerEntanglementHook:
 
         # Adapt bias shape to match sink activation
         bias = self._adapt_bias(self._bridge_bias, act)
-
-        # Apply head mask to bias (v1.8 staggered flux)
-        bias = self._apply_head_mask(bias)
 
         # Apply LoRA adapter for low-rank projection (v1.2-stable)
         biased = self.lora_adapter(act) + self.coupling_strength * bias
@@ -420,16 +398,6 @@ class CrossLayerEntanglementHook:
     # Public API
     # ------------------------------------------------------------------
     @property
-    def device(self) -> torch.device:
-        """Device of the bridge (inferred from LoRA adapter)."""
-        return self.lora_adapter.lora_A.device
-
-    @property
-    def hawking_flux(self):
-        """Alias for flux_governor (used by RecursiveMirror)."""
-        return self.flux_governor
-
-    @property
     def regulator(self):
         """Expose the UnitaryRegulator linked to the flux governor.
 
@@ -441,18 +409,6 @@ class CrossLayerEntanglementHook:
     @property
     def bell_correlation(self) -> float:
         """Latest measured Bell correlation between source and sink."""
-        return self._bell_correlation
-
-    def get_global_phase(self) -> float:
-        """Return the current global phase φ_AB.
-
-        Uses the latest Bell correlation as the phase proxy.  When
-        dual-link is attached its ``compute_cross_sync`` value is
-        appended to ``_bell_history``; the most recent entry is the
-        best approximation of φ_AB.
-        """
-        if self._bell_history:
-            return self._bell_history[-1]
         return self._bell_correlation
 
     @property
@@ -606,33 +562,6 @@ class CrossLayerEntanglementHook:
                 lambda mod, inp, out, idx=layer_idx: hook_fn(mod, inp, out, idx)
             )
             self._handles.append(h)
-
-    # ------------------------------------------------------------------
-    # Re-orthogonalization (v2.0)
-    # ------------------------------------------------------------------
-    @torch.no_grad()
-    def reorthogonalize(self) -> None:
-        """QR re-orthogonalize the accumulated gossip/Krylov state.
-
-        Performs QR decomposition on the stored bridge eigenvectors
-        and LoRA A matrix, replacing them with their orthogonal factors.
-        This corrects cumulative FP round-off that causes torsion
-        τ > 1e-8 in long gossip chains.
-
-        Guarantees ``||Q^T Q - I|| < 1e-10`` post-correction.
-        """
-        # Re-orthogonalize bridge eigenvectors
-        if self._bridge_eigenvectors is not None:
-            V = self._bridge_eigenvectors.double()
-            if V.dim() == 2 and V.shape[0] >= V.shape[1]:
-                Q, _ = torch.linalg.qr(V, mode="reduced")
-                self._bridge_eigenvectors = Q.to(self._bridge_eigenvectors.dtype)
-
-        # Re-orthogonalize LoRA A matrix columns
-        A = self.lora_adapter.lora_A
-        if A.shape[0] >= A.shape[1]:
-            Q, _ = torch.linalg.qr(A.data.double(), mode="reduced")
-            A.data.copy_(Q.to(A.dtype))
 
     def remove_hooks(self) -> None:
         """Remove all registered forward hooks."""

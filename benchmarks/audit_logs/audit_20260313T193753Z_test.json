@@ -1,0 +1,22 @@
+{
+  "timestamp": "20260313T193753Z",
+  "tag": "test",
+  "benchmark": {
+    "r_ratio": 0.58,
+    "zeta": 0.85,
+    "frobenius_stability": 0.21
+  },
+  "observed": {
+    "r_ratio": 0.56,
+    "zeta": 0.82,
+    "frobenius_stability": 0.23
+  },
+  "report": {
+    "delta_r": -0.019999999999999907,
+    "delta_zeta": -0.030000000000000027,
+    "delta_frobenius": 0.020000000000000018,
+    "spectral_divergence": 0.10726150365885088,
+    "passed": true,
+    "details": "Divergence=0.1073 (\u0394r=-0.019999999999999907, \u0394\u03b6=-0.030000000000000027, \u0394f=0.020000000000000018)"
+  }
+}

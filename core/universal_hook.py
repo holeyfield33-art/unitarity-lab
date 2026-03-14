@@ -110,6 +110,7 @@ class UniversalHookWrapper:
             sink_layer=self.last_idx,
             num_heads=self.num_heads,
             layer_accessor=lambda _m: self.layers,
+            d_model=self.hidden_dim,
         )
 
         # Passive mode: disable bridge tensor mutation while still
@@ -120,7 +121,8 @@ class UniversalHookWrapper:
         # Head-staggering mask
         self.head_mask = torch.zeros(self.num_heads, dtype=torch.bool)
         self._rotate_heads()
-        self.bridge.set_head_mask(self.head_mask)
+        if hasattr(self.bridge, "set_head_mask"):
+            self.bridge.set_head_mask(self.head_mask)
 
         # v2.1: Recursive Mirror with Schism Hardening
         self.recursive_mirror = RecursiveMirror(bridge=self.bridge, config=config)
