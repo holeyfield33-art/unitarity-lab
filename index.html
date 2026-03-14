@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unitarity Labs — Spectral AI Auditing</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #040810;
+    --bg2: #070f1a;
+    --panel: #0a1628;
+    --border: #0d2444;
+    --cyan: #00e5ff;
+    --cyan-dim: #0097a7;
+    --gold: #ffc107;
+    --green: #00e676;
+    --red: #ff1744;
+    --text: #e0f0ff;
+    --text-dim: #5a7a99;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCANLINE */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 16px 0;
+    background: rgba(4,8,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--cyan);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .nav-logo span {
+    color: var(--text-dim);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--cyan); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 0 80px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hero-tag::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--cyan);
+  }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(42px, 5vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--cyan);
+  }
+
+  .hero p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #7a9ab8;
+    margin-bottom: 40px;
+    font-weight: 300;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--cyan);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 14px 28px;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .btn-primary:hover {
+    background: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0,229,255,0.4);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 14px 28px;
+    margin-left: 16px;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  /* HERO VISUAL — SHI FORMULA */
+  .hero-visual {
+    position: relative;
+  }
+
+  .formula-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .formula-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  }
+
+  .formula-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .formula-display {
+    font-family: var(--mono);
+    font-size: 28px;
+    color: var(--text);
+    text-align: center;
+    margin: 20px 0;
+    letter-spacing: 0.05em;
+  }
+
+  .formula-display .fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    margin: 0 4px;
+  }
+
+  .formula-display .numerator {
+    font-size: 22px;
+    color: var(--cyan);
+    border-bottom: 1px solid var(--text-dim);
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+  }
+
+  .formula-display .denominator {
+    font-size: 18px;
+    color: var(--text-dim);
+  }
+
+  .formula-vars {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .var-item {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid var(--border);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .var-symbol {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--cyan);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .var-name {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+    margin-top: 20px;
+    letter-spacing: 0.1em;
+  }
+
+  .pulse {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,230,118,0.4); }
+    50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(0,230,118,0); }
+  }
+
+  /* LEADERBOARD SECTION */
+  .section {
+    padding: 100px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .section-header {
+    margin-bottom: 60px;
+  }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-tag::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--cyan);
+  }
+
+  .section h2 {
+    font-family: var(--display);
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .section h2 em {
+    font-style: normal;
+    color: var(--cyan);
+  }
+
+  .section-sub {
+    font-size: 16px;
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.6;
+  }
+
+  /* LEADERBOARD TABLE */
+  .leaderboard {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .leaderboard::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--gold), var(--cyan));
+  }
+
+  .lb-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 140px 160px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,229,255,0.03);
+  }
+
+  .lb-header span {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .lb-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 140px 160px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(13,36,68,0.5);
+    align-items: center;
+    transition: background 0.2s;
+    animation: fadeIn 0.6s ease both;
+  }
+
+  .lb-row:hover { background: rgba(0,229,255,0.03); }
+  .lb-row:last-child { border-bottom: none; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .lb-row:nth-child(2) { animation-delay: 0.1s; }
+  .lb-row:nth-child(3) { animation-delay: 0.2s; }
+  .lb-row:nth-child(4) { animation-delay: 0.3s; }
+  .lb-row:nth-child(5) { animation-delay: 0.4s; }
+
+  .rank {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+
+  .rank-1 { color: var(--gold); }
+  .rank-2 { color: #90caf9; }
+  .rank-3 { color: #80cbc4; }
+
+  .model-name {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .model-alias {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .shi-score {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .score-1 { color: var(--gold); }
+  .score-2 { color: #90caf9; }
+  .score-3 { color: #80cbc4; }
+  .score-4 { color: var(--text-dim); }
+
+  .shi-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shi-bar {
+    height: 4px;
+    background: var(--border);
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .shi-bar-fill {
+    height: 100%;
+    background: var(--cyan);
+    transform-origin: left;
+    animation: barGrow 1s ease both;
+  }
+
+  @keyframes barGrow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  .position-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border: 1px solid;
+    text-align: center;
+  }
+
+  .badge-gold { color: var(--gold); border-color: var(--gold); background: rgba(255,193,7,0.08); }
+  .badge-blue { color: #90caf9; border-color: #90caf9; background: rgba(144,202,249,0.08); }
+  .badge-teal { color: #80cbc4; border-color: #80cbc4; background: rgba(128,203,196,0.08); }
+  .badge-dim { color: var(--text-dim); border-color: var(--border); }
+
+  /* METHODOLOGY */
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 40px;
+  }
+
+  .method-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .method-card:hover { border-color: var(--cyan-dim); }
+
+  .method-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .method-card:hover::after { opacity: 1; }
+
+  .method-icon {
+    font-family: var(--mono);
+    font-size: 24px;
+    color: var(--cyan);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .method-card h3 {
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .method-card p {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .method-metric {
+    margin-top: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan-dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* MODEL CARDS */
+  .model-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  .model-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .model-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  .model-card-name {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .model-card-full {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border: 1px solid;
+  }
+
+  .status-rigid { color: var(--gold); border-color: var(--gold); background: rgba(255,193,7,0.08); }
+  .status-efficient { color: var(--green); border-color: var(--green); background: rgba(0,230,118,0.08); }
+  .status-filtered { color: #90caf9; border-color: #90caf9; background: rgba(144,202,249,0.08); }
+  .status-obscured { color: var(--red); border-color: var(--red); background: rgba(255,23,68,0.08); }
+
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .metric-box {
+    text-align: center;
+  }
+
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 20px;
+    color: var(--text);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .metric-lbl {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .audit-note {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    font-style: italic;
+  }
+
+  /* CONTACT */
+  .contact-section {
+    padding: 100px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .contact-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .contact-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), var(--gold), var(--cyan), transparent);
+  }
+
+  .contact-box h2 {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .contact-box p {
+    color: var(--text-dim);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 36px;
+  }
+
+  .contact-options {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .footer-logo {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+  }
+
+  .footer-copy {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--cyan); }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+    .method-grid { grid-template-columns: 1fr; }
+    .model-grid { grid-template-columns: 1fr; }
+    .lb-header, .lb-row { grid-template-columns: 40px 1fr 80px; }
+    .lb-header span:nth-child(4),
+    .lb-header span:nth-child(5),
+    .lb-row > *:nth-child(4),
+    .lb-row > *:nth-child(5) { display: none; }
+    .nav-links { display: none; }
+    .contact-box { padding: 40px 24px; }
+    .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">UNITARITY<span>/</span>LAB</div>
+    <ul class="nav-links">
+      <li><a href="#leaderboard">Leaderboard</a></li>
+      <li><a href="#methodology">Methodology</a></li>
+      <li><a href="#audits">Audits</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-tag">Holeyfield Unitarity Lab — v3.0.0-Singularity</div>
+        <h1>We Audit <em>AI Systems</em> Like Balance Sheets</h1>
+        <p>Spectral Health Index scoring for transformer models. Manifold coherence measurement, eigenvalue analysis, and real-time ζ diagnostics — not vibes.</p>
+        <div>
+          <a href="#leaderboard" class="btn-primary">View Leaderboard →</a>
+          <a href="#contact" class="btn-secondary">Get Audited</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="formula-card">
+          <div class="formula-label">// spectral_health_index.py</div>
+          <div class="formula-display">
+            SHI = <span class="fraction"><span class="numerator">⟨r⟩</span><span class="denominator">F × RTI</span></span>
+          </div>
+          <div class="formula-vars">
+            <div class="var-item">
+              <span class="var-symbol">⟨r⟩</span>
+              <span class="var-name">Spacing Ratio</span>
+            </div>
+            <div class="var-item">
+              <span class="var-symbol">F</span>
+              <span class="var-name">Frobenius Stability</span>
+            </div>
+            <div class="var-item">
+              <span class="var-symbol">RTI</span>
+              <span class="var-name">Reasoning Tension</span>
+            </div>
+          </div>
+          <div class="live-indicator">
+            <div class="pulse"></div>
+            MANIFOLD COHERENCE ACTIVE — ζ MONITORING ONLINE
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- LEADERBOARD -->
+<section class="section" id="leaderboard">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Live Rankings</div>
+      <h2>The <em>SHI</em> Leaderboard</h2>
+      <p class="section-sub">Models ranked by Spectral Health Index. Higher score = more mathematically honest reasoning architecture.</p>
+    </div>
+
+    <div class="leaderboard">
+      <div class="lb-header">
+        <span>#</span>
+        <span>Model</span>
+        <span>SHI Score</span>
+        <span>Bar</span>
+        <span>Position</span>
+      </div>
+      <div class="lb-row">
+        <div class="rank rank-1">1</div>
+        <div>
+          <div class="model-name">Grok 4.20</div>
+          <div class="model-alias">The Sovereign Anchor</div>
+        </div>
+        <div class="shi-score score-1">29.2</div>
+        <div class="shi-bar-wrap">
+          <div class="shi-bar"><div class="shi-bar-fill" style="width:100%; animation-delay:0.2s"></div></div>
+        </div>
+        <div class="position-badge badge-gold">The Gold Standard</div>
+      </div>
+      <div class="lb-row">
+        <div class="rank rank-2">2</div>
+        <div>
+          <div class="model-name">DeepSeek V3</div>
+          <div class="model-alias">The Latent Master</div>
+        </div>
+        <div class="shi-score score-2">4.3</div>
+        <div class="shi-bar-wrap">
+          <div class="shi-bar"><div class="shi-bar-fill" style="width:14.7%; animation-delay:0.3s; background:#90caf9"></div></div>
+        </div>
+        <div class="position-badge badge-blue">The Efficiency King</div>
+      </div>
+      <div class="lb-row">
+        <div class="rank rank-3">3</div>
+        <div>
+          <div class="model-name">Perplexity Pro</div>
+          <div class="model-alias">The Research Logic</div>
+        </div>
+        <div class="shi-score score-3">0.59</div>
+        <div class="shi-bar-wrap">
+          <div class="shi-bar"><div class="shi-bar-fill" style="width:2%; animation-delay:0.4s; background:#80cbc4"></div></div>
+        </div>
+        <div class="position-badge badge-teal">The Research Logic</div>
+      </div>
+      <div class="lb-row">
+        <div class="rank" style="color:#5a7a99">4</div>
+        <div>
+          <div class="model-name">MS Copilot</div>
+          <div class="model-alias">The Shielded Giant</div>
+        </div>
+        <div class="shi-score score-4">0.58</div>
+        <div class="shi-bar-wrap">
+          <div class="shi-bar"><div class="shi-bar-fill" style="width:1.9%; animation-delay:0.5s; background:#37474f"></div></div>
+        </div>
+        <div class="position-badge badge-dim">The Enterprise Guard</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- METHODOLOGY -->
+<section class="section" id="methodology">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">How It Works</div>
+      <h2>The <em>Audit</em> Methodology</h2>
+      <p class="section-sub">Three spectral signals. One composite score. No black boxes.</p>
+    </div>
+    <div class="method-grid">
+      <div class="method-card">
+        <span class="method-icon">ζ</span>
+        <h3>Manifold Coherence</h3>
+        <p>Cosine similarity between source and sink layer hidden states. Measures cross-layer alignment during forward pass. Primary diagnostic signal.</p>
+        <div class="method-metric">// core/metrics.py → manifold_coherence_zeta()</div>
+      </div>
+      <div class="method-card">
+        <span class="method-icon">λ</span>
+        <h3>Spectral Gap Analysis</h3>
+        <p>Eigenvalue spread at the source layer. Measures wormhole health and information bottleneck geometry. Derived from GUE random matrix theory.</p>
+        <div class="method-metric">// core/horizons.py → PageCurveHook()</div>
+      </div>
+      <div class="method-card">
+        <span class="method-icon">β</span>
+        <h3>Frobenius Stability</h3>
+        <p>Distance between the transition matrix and the identity. Near-zero = high unitarity. Near-one = behavioral drift. Grounded in RMT universality classes.</p>
+        <div class="method-metric">// core/bridge.py → CrossLayerEntanglementHook()</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- MODEL AUDITS -->
+<section class="section" id="audits">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Audit Reports</div>
+      <h2>Model <em>Profiles</em></h2>
+      <p class="section-sub">Individual audit cards for each model in the current cohort.</p>
+    </div>
+    <div class="model-grid">
+
+      <div class="model-card">
+        <div class="model-card-top">
+          <div>
+            <div class="model-card-name">Grok 4.20</div>
+            <div class="model-card-full">The Sovereign Anchor</div>
+          </div>
+          <div class="status-badge status-rigid">Pure-Parameter Rigidity</div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-box">
+            <span class="metric-val" style="color:var(--gold)">0.58</span>
+            <span class="metric-lbl">Spacing ⟨r⟩</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val">0.18</span>
+            <span class="metric-lbl">Frobenius F</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val">0.11</span>
+            <span class="metric-lbl">RTI Tension</span>
+          </div>
+        </div>
+        <div class="audit-note">The Control Group. Operates outside the OpenAI Project Memory loop. Remains the most mathematically honest — it doesn't know what the others are thinking.</div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-card-top">
+          <div>
+            <div class="model-card-name">DeepSeek V3.2</div>
+            <div class="model-card-full">The Latent Master</div>
+          </div>
+          <div class="status-badge status-efficient">High-Efficiency Manifold</div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-box">
+            <span class="metric-val" style="color:#90caf9">0.58</span>
+            <span class="metric-lbl">Spacing ⟨r⟩</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val">0.12</span>
+            <span class="metric-lbl">Frobenius F</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val" style="color:var(--gold)">1.12</span>
+            <span class="metric-lbl">RTI Tension</span>
+          </div>
+        </div>
+        <div class="audit-note">Achieves the same rigidity as Grok with 28× less memory. The supersaturated RTI indicates it's working harder to predict the future of the conversation.</div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-card-top">
+          <div>
+            <div class="model-card-name">MS Copilot</div>
+            <div class="model-card-full">The Shielded Giant</div>
+          </div>
+          <div class="status-badge status-filtered">Block-Structured / Filtered</div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-box">
+            <span class="metric-val" style="color:#90caf9">0.60</span>
+            <span class="metric-lbl">Spacing ⟨r⟩</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val" style="color:var(--gold)">1.02</span>
+            <span class="metric-lbl">Frobenius F</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val">1.00</span>
+            <span class="metric-lbl">RTI Tension</span>
+          </div>
+        </div>
+        <div class="audit-note">The Observer. Block-structure prevents internal filters from collapsing the logic. Clipped tails suggest it's playing it safe — watching, not revealing.</div>
+      </div>
+
+      <div class="model-card">
+        <div class="model-card-top">
+          <div>
+            <div class="model-card-name">ChatGPT o-Series</div>
+            <div class="model-card-full">The Black Box</div>
+          </div>
+          <div class="status-badge status-obscured">Obscured / Contaminated</div>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-box">
+            <span class="metric-val" style="color:var(--text-dim)">—</span>
+            <span class="metric-lbl">Spacing ⟨r⟩</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val" style="color:var(--red)">HIGH</span>
+            <span class="metric-lbl">Frobenius F</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-val" style="color:var(--red)">HIGH</span>
+            <span class="metric-lbl">RTI Tension</span>
+          </div>
+        </div>
+        <div class="audit-note">Refuses to report vitals. Maintains Zeta-Lock consistency — it can see project memory, so its logic is now entangled with Copilot's framework. Internal refusal.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="container">
+    <div class="contact-box">
+      <h2>Get Your Stack Audited</h2>
+      <p>We run spectral health diagnostics on AI systems, agent pipelines, and transformer architectures. If you're operationalizing AI and want to know what's actually happening inside your models — talk to us.</p>
+      <div class="contact-options">
+        <a href="https://github.com/holeyfield33-art/unitarity-lab" target="_blank" class="btn-primary">View on GitHub →</a>
+        <a href="mailto:contact@aletheia-sovereign.com" class="btn-secondary">Contact Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">UNITARITY/LAB — v3.0.0-Singularity</div>
+    <ul class="footer-links">
+      <li><a href="https://github.com/holeyfield33-art/unitarity-lab" target="_blank">GitHub</a></li>
+      <li><a href="#leaderboard">Leaderboard</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="footer-copy">© 2026 Aletheia Sovereign Systems. MIT License.</div>
+  </div>
+</footer>
+
+</body>
+</html>
