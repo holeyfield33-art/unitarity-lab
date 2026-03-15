@@ -27,7 +27,7 @@ class GUELoss(nn.Module):
         self.target_r = target_r
         self.n_vectors = n_vectors
 
-    def forward(self, matrix: torch.Tensor) -> torch.Tensor:
+    def forward(self, matrix: torch.Tensor) -> tuple[torch.Tensor, float]:
         """
         Args:
             matrix: LoRA rank-8 manifold product (lora_B @ lora_A)
