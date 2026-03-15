@@ -152,6 +152,16 @@ class CrossLayerEntanglementHook:
             d_model=d_model, rank=lora_rank, alpha=coupling_strength
         )
 
+        # Fixed non-trainable random isometry for B projection
+        # Preserves rank-8 subspace mapping back to d_model
+        self.lora_adapter.register_buffer(
+            'lora_B_projection',
+            torch.nn.functional.normalize(
+                torch.randn(8, self.lora_adapter.lora_B.shape[0]),
+                dim=1
+            )
+        )
+
         # Hawking Flux Governor (v1.3) — breaks circular reasoning
         self.flux_governor = HawkingFluxGovernor(
             regulator=None,  # linked later by UnitaryRegulator
