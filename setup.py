@@ -1,4 +1,4 @@
-"""unitarity-lab — version shim for pyproject.toml dynamic versioning."""
+"""unitarity-labs — version shim for pyproject.toml dynamic versioning."""
 
 from setuptools import setup
 
