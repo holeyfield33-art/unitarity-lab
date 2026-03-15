@@ -1,5 +1,5 @@
 """
-test_hardening.py — v3.0.0-Singularity TMRP-13 Regression Tests
+test_hardening.py — v3.1.1-Singularity TMRP-13 Regression Tests
 =================================================================
 Covers all 10 phases of the hardening pass:
 
@@ -62,12 +62,12 @@ def _make_wrapper(mode: str = "active", enable_dual: bool = False):
 class TestVersionConsistency:
     def test_core_version_is_singularity(self):
         from core.version import __version__
-        assert __version__ == "3.0.0-Singularity"
+        assert __version__ == "3.1.1-Singularity"
 
     def test_init_reexports_version(self):
         import core
         assert hasattr(core, "__version__")
-        assert core.__version__ == "3.0.0-Singularity"
+        assert core.__version__ == "3.1.1-Singularity"
 
     def test_setup_py_version_matches(self):
         """setup.py must declare the same version string."""
@@ -79,7 +79,7 @@ class TestVersionConsistency:
         for node in ast.walk(tree):
             if isinstance(node, ast.keyword) and node.arg == "version":
                 if isinstance(node.value, ast.Constant):
-                    assert node.value.value == "3.0.0-Singularity"
+                    assert node.value.value == "3.1.1-Singularity"
                     return
         pytest.fail("Could not find version= in setup.py")
 

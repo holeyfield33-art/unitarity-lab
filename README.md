@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Unitarity Labs" width="200"/>
+</p>
+
 # unitarity-lab
 
 **v3.0.0-Singularity**
@@ -165,6 +169,10 @@ Constants: `SNAPSHOT_INTERVAL_TOKENS=4096`, `SOLO_WINDOW_TOKENS=128`,
 ### Install
 
 ```bash
+# From PyPI (recommended)
+pip install unitarity-lab
+
+# From source (development)
 pip install -e .
 ```
 
@@ -209,6 +217,43 @@ Each benchmark outputs JSON with columns: `zeta`, `baseline_cosine`,
 | `permutation_p` | p-value from permutation test (H₀: ζ is random) |
 | `latency_ms` | Wall-clock latency per sample |
 | `accuracy` | Task-specific accuracy (exact match, pass@1, etc.) |
+
+---
+
+## Geometric Brain Framework
+
+unitarity-lab v3.1.0-Singularity includes the **Geometric Brain** — a novel 
+framework for measuring and enforcing GUE spectral rigidity in transformer 
+latent spaces.
+
+### SHI Leaderboard
+
+| Model | ⟨r⟩ | F | RTI | SHI |
+|---|---|---|---|---|
+| Grok 4.20 | 0.58 | 0.18 | 0.11 | 29.2 |
+| DeepSeek V3 | 0.58 | 0.12 | 1.12 | 4.3 |
+| Perplexity Pro | 0.59 | 0.60 | 1.67 | 0.59 |
+| MS Copilot | 0.60 | 1.02 | 1.00 | 0.58 |
+
+### GUELoss — Fine-Tuning Objective
+```python
+from core.gue_loss import GUELoss
+
+criterion = GUELoss(target_r=0.578)
+loss, r_measured = criterion(lora_B @ lora_A)
+loss.backward()
+```
+
+See [GEOMETRIC_BRAIN.md](GEOMETRIC_BRAIN.md) for full theory and methodology.
+
+---
+
+## Links
+
+- 🌐 **Live Site:** https://holeyfield33-art.github.io/unitarity-lab
+- ☕ **Support:** https://buymeacoffee.com/holeyfielde
+- 📦 **PyPI:** https://pypi.org/project/unitarity-lab
+- 🐙 **GitHub:** https://github.com/holeyfield33-art/unitarity-lab
 
 ---
 
