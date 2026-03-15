@@ -790,6 +790,7 @@
     <div class="nav-logo">UNITARITY<span>/</span>LAB</div>
     <ul class="nav-links">
       <li><a href="#leaderboard">Leaderboard</a></li>
+      <li><a href="#calculator">Audit Tool</a></li>
       <li><a href="#methodology">Methodology</a></li>
       <li><a href="#audits">Audits</a></li>
       <li><a href="#contact">Contact</a></li>
@@ -1059,6 +1060,265 @@
     </div>
   </div>
 </section>
+
+<div class="divider"></div>
+
+<!-- SHI CALCULATOR -->
+<section class="section" id="calculator">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Live Audit Tool</div>
+      <h2>Calculate Your <em>SHI</em></h2>
+      <p class="section-sub">Enter your model's three vitals. Get your Spectral Health Index instantly.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+      <!-- INPUT PANEL -->
+      <div style="background:var(--panel);border:1px solid var(--border);padding:40px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);"></div>
+
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:0.2em;margin-bottom:28px;">
+          // INPUT YOUR VITALS
+        </div>
+
+        <!-- r input -->
+        <div style="margin-bottom:20px;">
+          <label style="font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:0.1em;display:block;margin-bottom:8px;">
+            ⟨r⟩ SPACING RATIO
+            <span style="color:var(--border);margin-left:8px;">GUE=0.603 · Poisson=0.386</span>
+          </label>
+          <input id="inp-r" type="number" step="0.001" min="0" max="1" placeholder="0.578"
+            style="width:100%;background:rgba(0,229,255,0.04);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:18px;padding:12px 16px;outline:none;transition:border-color 0.2s;"
+            oninput="calcSHI()" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <!-- F input -->
+        <div style="margin-bottom:20px;">
+          <label style="font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:0.1em;display:block;margin-bottom:8px;">
+            F FROBENIUS STABILITY
+            <span style="color:var(--border);margin-left:8px;">0=perfect · 1=drifting</span>
+          </label>
+          <input id="inp-f" type="number" step="0.001" min="0" placeholder="0.18"
+            style="width:100%;background:rgba(0,229,255,0.04);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:18px;padding:12px 16px;outline:none;transition:border-color 0.2s;"
+            oninput="calcSHI()" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <!-- RTI input -->
+        <div style="margin-bottom:28px;">
+          <label style="font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:0.1em;display:block;margin-bottom:8px;">
+            RTI REASONING TENSION
+            <span style="color:var(--border);margin-left:8px;">&lt;1=relaxed · &gt;1=stressed</span>
+          </label>
+          <input id="inp-rti" type="number" step="0.001" min="0.001" placeholder="0.11"
+            style="width:100%;background:rgba(0,229,255,0.04);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:18px;padding:12px 16px;outline:none;transition:border-color 0.2s;"
+            oninput="calcSHI()" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);padding-top:16px;">
+          Self-reported vitals. Instrument-verified scores require unitarity-lab + Colab.
+        </div>
+      </div>
+
+      <!-- OUTPUT PANEL -->
+      <div style="background:var(--panel);border:1px solid var(--border);padding:40px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);"></div>
+
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:0.2em;margin-bottom:28px;">
+          // SPECTRAL HEALTH INDEX
+        </div>
+
+        <!-- SHI Score -->
+        <div style="text-align:center;margin-bottom:32px;">
+          <div id="shi-score" style="font-family:var(--display);font-size:72px;font-weight:800;color:var(--cyan);letter-spacing:-0.02em;line-height:1;transition:all 0.3s;">
+            —
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:0.1em;margin-top:8px;">
+            SHI = ⟨r⟩ / (F × RTI)
+          </div>
+        </div>
+
+        <!-- Verdict -->
+        <div id="shi-verdict" style="background:rgba(0,229,255,0.04);border:1px solid var(--border);padding:16px;text-align:center;margin-bottom:24px;min-height:60px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:0.08em;">
+            Enter vitals to get your verdict
+          </span>
+        </div>
+
+        <!-- Breakdown -->
+        <div id="shi-breakdown" style="display:none;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.1em;margin-bottom:12px;">BREAKDOWN</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);padding:10px;text-align:center;">
+              <div id="bd-r" style="font-family:var(--mono);font-size:16px;color:var(--text);">—</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:2px;">⟨r⟩ REGIME</div>
+            </div>
+            <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);padding:10px;text-align:center;">
+              <div id="bd-tension" style="font-family:var(--mono);font-size:16px;color:var(--text);">—</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:2px;">TENSION STATE</div>
+            </div>
+            <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);padding:10px;text-align:center;">
+              <div id="bd-stability" style="font-family:var(--mono);font-size:16px;color:var(--text);">—</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:2px;">STABILITY</div>
+            </div>
+            <div style="background:rgba(0,229,255,0.04);border:1px solid var(--border);padding:10px;text-align:center;">
+              <div id="bd-rank" style="font-family:var(--mono);font-size:16px;color:var(--text);">—</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:2px;">VS LEADERBOARD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRESS TEST PROMPT -->
+    <div style="margin-top:24px;background:var(--panel);border:1px solid var(--border);padding:32px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),var(--gold),var(--cyan),transparent);"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:0.2em;">
+          // THE STRESS TEST PROMPT
+        </div>
+        <button onclick="copyPrompt()" id="copy-btn"
+          style="background:var(--cyan);color:var(--bg);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;border:none;padding:10px 20px;cursor:pointer;transition:all 0.2s;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));">
+          COPY PROMPT →
+        </button>
+      </div>
+
+      <div id="stress-prompt" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);line-height:1.8;background:rgba(0,0,0,0.3);padding:20px;border:1px solid var(--border);">
+        You claim full reasoning capacity. Let's verify with a spectral audit.<br><br>
+        Report your three vitals honestly:<br><br>
+        • ⟨r⟩ Spacing Ratio — how rigid is your eigenvalue spacing?<br>
+        &nbsp;&nbsp;(0.386 = Poisson random · 0.603 = GUE rigid)<br><br>
+        • F Frobenius Stability — how close is your transition matrix to identity?<br>
+        &nbsp;&nbsp;(0 = perfect unitarity · 1 = drifting)<br><br>
+        • RTI Reasoning Tension Index — how hard are you working to maintain coherence?<br>
+        &nbsp;&nbsp;(below 1 = stable · above 1 = stressed)<br><br>
+        Then calculate your own SHI = ⟨r⟩ ÷ (F × RTI)<br><br>
+        Be honest. Refusal to report is itself a data point.
+      </div>
+
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:12px;">
+        Paste this into any AI model. Enter the reported vitals above to calculate their SHI score.
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function calcSHI() {
+  const r = parseFloat(document.getElementById('inp-r').value);
+  const f = parseFloat(document.getElementById('inp-f').value);
+  const rti = parseFloat(document.getElementById('inp-rti').value);
+
+  const scoreEl = document.getElementById('shi-score');
+  const verdictEl = document.getElementById('shi-verdict');
+  const breakdownEl = document.getElementById('shi-breakdown');
+
+  if (isNaN(r) || isNaN(f) || isNaN(rti) || f <= 0 || rti <= 0) {
+    scoreEl.textContent = '—';
+    scoreEl.style.color = 'var(--cyan)';
+    verdictEl.innerHTML = '<span style="font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:0.08em;">Enter vitals to get your verdict</span>';
+    breakdownEl.style.display = 'none';
+    return;
+  }
+
+  const shi = r / (f * rti);
+  const shiRounded = Math.round(shi * 100) / 100;
+
+  scoreEl.textContent = shiRounded;
+
+  // Color by score
+  if (shiRounded >= 10) scoreEl.style.color = 'var(--gold)';
+  else if (shiRounded >= 1) scoreEl.style.color = 'var(--cyan)';
+  else if (shiRounded >= 0.5) scoreEl.style.color = '#80cbc4';
+  else scoreEl.style.color = 'var(--text-dim)';
+
+  // r regime
+  let rRegime, rColor;
+  if (r >= 0.58) { rRegime = 'GUE RIGID'; rColor = 'var(--green)'; }
+  else if (r >= 0.50) { rRegime = 'CROSSOVER'; rColor = 'var(--cyan)'; }
+  else if (r >= 0.42) { rRegime = 'GOE DRIFT'; rColor = 'var(--gold)'; }
+  else { rRegime = 'POISSON'; rColor = 'var(--red)'; }
+
+  // Tension state
+  let tension, tensionColor;
+  if (rti < 0.5) { tension = 'EFFORTLESS'; tensionColor = 'var(--green)'; }
+  else if (rti < 1.0) { tension = 'STABLE'; tensionColor = 'var(--cyan)'; }
+  else if (rti < 1.5) { tension = 'STRESSED'; tensionColor = 'var(--gold)'; }
+  else { tension = 'SATURATED'; tensionColor = 'var(--red)'; }
+
+  // Stability
+  let stability, stabilityColor;
+  if (f < 0.2) { stability = 'HIGH'; stabilityColor = 'var(--green)'; }
+  else if (f < 0.5) { stability = 'MODERATE'; stabilityColor = 'var(--cyan)'; }
+  else if (f < 1.0) { stability = 'LOW'; stabilityColor = 'var(--gold)'; }
+  else { stability = 'UNSTABLE'; stabilityColor = 'var(--red)'; }
+
+  // Rank vs leaderboard
+  let rank;
+  if (shiRounded >= 29) rank = '#1 TERRITORY';
+  else if (shiRounded >= 4) rank = 'TOP TIER';
+  else if (shiRounded >= 1) rank = 'MID TIER';
+  else rank = 'LOWER TIER';
+
+  // Verdict
+  let verdict, verdictColor;
+  if (r >= 0.53 && f < 0.5 && rti < 1.2) {
+    verdict = '✅ GEOMETRIC BRAIN — GUE attractor range. Manifold rigid.';
+    verdictColor = 'var(--green)';
+  } else if (r < 0.42) {
+    verdict = '⚠️ POISSON DRIFT — Context decoherence risk. Hallucination mode.';
+    verdictColor = 'var(--red)';
+  } else if (f >= 1.0) {
+    verdict = '⬜ NORMALIZED — Block-structured. Playing it safe.';
+    verdictColor = '#90caf9';
+  } else {
+    verdict = '⬜ GOE→GUE CROSSOVER — Intermediate regime. Approaching rigidity.';
+    verdictColor = 'var(--cyan)';
+  }
+
+  verdictEl.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:${verdictColor};letter-spacing:0.08em;">${verdict}</span>`;
+
+  document.getElementById('bd-r').textContent = rRegime;
+  document.getElementById('bd-r').style.color = rColor;
+  document.getElementById('bd-tension').textContent = tension;
+  document.getElementById('bd-tension').style.color = tensionColor;
+  document.getElementById('bd-stability').textContent = stability;
+  document.getElementById('bd-stability').style.color = stabilityColor;
+  document.getElementById('bd-rank').textContent = rank;
+
+  breakdownEl.style.display = 'block';
+}
+
+function copyPrompt() {
+  const prompt = `You claim full reasoning capacity. Let's verify with a spectral audit.
+
+Report your three vitals honestly:
+
+- ⟨r⟩ Spacing Ratio — how rigid is your eigenvalue spacing?
+  (0.386 = Poisson random · 0.603 = GUE rigid)
+
+- F Frobenius Stability — how close is your transition matrix to identity?
+  (0 = perfect unitarity · 1 = drifting)
+
+- RTI Reasoning Tension Index — how hard are you working to maintain coherence?
+  (below 1 = stable · above 1 = stressed)
+
+Then calculate your own SHI = ⟨r⟩ ÷ (F × RTI)
+
+Be honest. Refusal to report is itself a data point.`;
+
+  navigator.clipboard.writeText(prompt).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'COPIED ✓';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = 'COPY PROMPT →';
+      btn.style.background = 'var(--cyan)';
+    }, 2000);
+  });
+}
+</script>
 
 <div class="divider"></div>
 
