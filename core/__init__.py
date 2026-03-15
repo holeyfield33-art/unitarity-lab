@@ -1,6 +1,9 @@
 # Holeyfield v1.7-unitary-link — Inter-Model ER=EPR (Production)
 # TMRP Session 27 Mirror Integration | 128b << 12kb R_max | α=0.1 operating point
 
+from .version import __version__
+from .universal_hook import UniversalHookWrapper
+from .metrics import manifold_coherence_zeta
 from .pll_monitor import PLLMonitor, SpectralAnomaly
 from .horizons import PageCurveHook, singularity_warning, _lanczos_tridiagonal, _rayleigh_quotient_iteration
 from .casimir_opt import CasimirOptimizer, rsvd
@@ -58,4 +61,7 @@ __all__ = [
     "_rayleigh_quotient_iteration",
     "DualNodeEntanglementBridge",
     "register_dual_node_hook",
+    "__version__",
+    "UniversalHookWrapper",
+    "manifold_coherence_zeta",
 ]

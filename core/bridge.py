@@ -571,3 +571,31 @@ class CrossLayerEntanglementHook:
         if hasattr(self, 'dual_link') and self.dual_link is not None:
             self.dual_link.close()
             self.dual_link = None
+
+    def reorthogonalize(self) -> None:
+        """
+        Forces rank-8 eigenvector basis back to orthonormal via QR decomposition.
+        Counteracts floating-point drift during long inference runs.
+        Also re-orthonormalizes LoRA A columns.
+        """
+        if self._bridge_eigenvectors is not None:
+            q, r = torch.linalg.qr(self._bridge_eigenvectors)
+            d = torch.diag(r).sign().view(1, -1)
+            self._bridge_eigenvectors = (q * d).detach()
+
+        # Also re-orthonormalize LoRA A columns
+        A = self.lora_adapter.lora_A
+        q, r = torch.linalg.qr(A.data)
+        d = torch.diag(r).sign().view(1, -1)
+        A.data.copy_((q * d).detach())
+
+    def get_global_phase(self) -> float:
+        """
+        Returns current phase state from integrated PLL monitor.
+        Reflects Lyapunov profile phase, not a random float.
+        """
+        if not hasattr(self, 'pll_monitor') or self.pll_monitor is None:
+            return 0.0
+        if hasattr(self.pll_monitor, 'get_instantaneous_phase'):
+            return self.pll_monitor.get_instantaneous_phase()
+        return float(getattr(self.pll_monitor, 'phase_error', 0.0))

@@ -10,4 +10,4 @@ def get_version():
 
 
 if __name__ == "__main__":
-    setup(version=get_version())
+    setup(version="3.0.0-Singularity")

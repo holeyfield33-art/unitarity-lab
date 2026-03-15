@@ -62,6 +62,24 @@ class DualNodeEntanglementBridge:
         self.anti_resonance_threshold: float = 0.95
         self.latency_timeout: float = 0.010  # 10ms max
 
+    def _adjust_epoch(self, rtt: float) -> None:
+        """Adjusts adaptive epoch length based on measured RTT.
+
+        RTT > 50ms  → double epoch_len (high latency needs longer epochs)
+        RTT < 30ms  → halve epoch_len (low latency allows shorter epochs)
+        Otherwise   → no change
+        Clamped to [16, 128].
+        """
+        epoch = getattr(self, 'epoch_len', 16)
+        if rtt > 0.050:
+            epoch = epoch * 2
+        elif rtt < 0.030:
+            epoch = epoch // 2
+        self.epoch_len = max(16, min(epoch, 128))
+        if not hasattr(self, '_rtt_history'):
+            self._rtt_history = []
+        self._rtt_history.append(rtt)
+
     def send_krylov_basis(self, krylov_basis: torch.Tensor) -> None:
         """Compress and transmit Krylov subspace via SVD low-rank."""
         U, _, _ = torch.svd_lowrank(krylov_basis.float(), q=self.krylov_dim)
