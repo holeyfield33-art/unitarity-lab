@@ -247,3 +247,53 @@ class UniversalHookWrapper:
     def remove_hooks(self) -> None:
         """Remove all hooks registered by the bridge."""
         self.bridge.remove_hooks()
+
+    # ── Geometric Brain Buffer ──────────────────────────────────────────
+    # Stores post-MLP hidden states for spectral rigidity analysis.
+    # See tests/test_geometric_rigidity.py and GEOMETRIC_BRAIN.md
+
+    _instance = None  # Class-level reference for test access
+
+    def register_geometric_hooks(self, layers: list):
+        """
+        Registers forward hooks to capture post-MLP residual stream.
+        Target: layer.mlp output at each specified layer index.
+        Minimum S=512 tokens required for valid GUE measurement.
+        """
+        if not hasattr(self, '_buffer'):
+            self._buffer = {}
+
+        UniversalHookWrapper._instance = self
+
+        for idx in layers:
+            try:
+                target = list(self.model.model.layers)[idx].mlp
+                target.register_forward_hook(self._hook_fn(idx))
+            except (AttributeError, IndexError) as e:
+                print(f"[GeometricBrain] Could not hook layer {idx}: {e}")
+
+    def _hook_fn(self, layer_idx: int):
+        """Returns a hook function that stores detached activations."""
+        def hook(module, input, output):
+            # Detach + clone prevents compute graph memory leaks
+            if not hasattr(self, '_buffer'):
+                self._buffer = {}
+            self._buffer[layer_idx] = output.detach().clone()
+        return hook
+
+    def get_buffer(self, layer: int):
+        """
+        Exposes manifold sample for r-ratio audit.
+        Returns tensor of shape [batch, seq, dim].
+        Raises ValueError if hook not registered or inference not run.
+        """
+        if not hasattr(self, '_buffer') or layer not in self._buffer:
+            raise ValueError(
+                f"No manifold data at layer {layer}. "
+                "Call register_geometric_hooks() and run inference first."
+            )
+        return self._buffer[layer]
+
+    def clear_buffer(self):
+        """Frees buffer memory between audit runs."""
+        self._buffer = {}
