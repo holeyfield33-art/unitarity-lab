@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unitarity-lab"
-dynamic = ["version"]
+version = "3.0.0"
 description = "Experimental multi-model runtime for transformer instrumentation, latent alignment tracing, distributed coordination"
 readme = "README.md"
 authors = [{name = "holeyfield33-art"}]
