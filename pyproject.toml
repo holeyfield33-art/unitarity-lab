@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unitarity-labs"
-version = "3.1.4"
+version = "3.1.5"
 description = "Experimental multi-model runtime for transformer instrumentation, latent alignment tracing, distributed coordination"
 readme = "README.md"
 authors = [{name = "holeyfield33-art"}]
@@ -38,7 +38,8 @@ Homepage = "https://github.com/holeyfield33-art/unitarity-lab"
 Repository = "https://github.com/holeyfield33-art/unitarity-lab.git"
 
 [project.scripts]
-unitarity-start = "start_node:main"
+unitarity-start = "unitarity_labs.cli:main"
+unitarity-validate = "unitarity_labs.cli:validate_text_main"
 
 [tool.setuptools.packages.find]
 include = ["unitarity_labs", "unitarity_labs.*"]
