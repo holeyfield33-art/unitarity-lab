@@ -1,6 +1,6 @@
 # Unitarity Labs — Official Documentation
 
-**Version 3.1.5-Singularity** | MIT License | Python ≥ 3.9
+**Version 3.1.6-Singularity** | MIT License | Python ≥ 3.9
 
 > A runtime for instrumenting Hugging Face transformer models, measuring cross-layer spectral alignment during inference, and coordinating distributed model instances with Byzantine fault tolerance.
 
@@ -70,7 +70,7 @@ pip install -e .
 
 ```bash
 python -c "from unitarity_labs.core import __version__; print(__version__)"
-# 3.1.5-Singularity
+# 3.1.6-Singularity
 ```
 
 ### Dependencies
@@ -243,7 +243,8 @@ unitarity-start [OPTIONS]
 |----------|-----------|---------------|
 | No GPU | FP32 | meta-llama/Llama-3.2-1B |
 | < 8 GB | INT4 | unsloth/Llama-3.2-1B-bnb-4bit |
-| 8–24 GB | BF16 | meta-llama/Llama-3.2-1B |
+| 8–24 GB, compute cap < 8.0 (T4) | INT4 | unsloth/Llama-3.2-1B-bnb-4bit |
+| 8–24 GB, compute cap ≥ 8.0 (A10/A100) | BF16 | meta-llama/Llama-3.2-1B |
 | ≥ 24 GB | BF16 | meta-llama/Llama-3.2-1B |
 
 ### `unitarity-validate`
@@ -1318,25 +1319,26 @@ Adversarial robustness testing. Measures whether active-mode intervention affect
 
 ## 10. Google Colab Guide
 
-### Install (v3.1.5+)
+### Install (v3.1.6+)
 
 ```python
-# Cell 1
+# Cell 1 — Install
 !pip install unitarity-labs
 ```
 
 ### Verify Installation
 
 ```python
-# Cell 2
+# Cell 2 — Verify
 from unitarity_labs.core import __version__
 print(f"unitarity-labs {__version__}")
+# Expected: 3.1.6-Singularity
 ```
 
 ### Passive Observation (no GPU mutation)
 
 ```python
-# Cell 3
+# Cell 3 — Passive mode (CPU-safe, no GPU required)
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from unitarity_labs.core.universal_hook import UniversalHookWrapper
@@ -1359,8 +1361,9 @@ for k, v in metrics.items():
 ### Active Mode with ζ Comparison
 
 ```python
-# Cell 4
+# Cell 4 — Active mode ζ comparison (CPU-safe)
 wrapper_active = UniversalHookWrapper(model, config=model.config, mode="active")
+wrapper_active.ensure_device()
 
 test_prompts = {
     "LOGIC": "Every integer greater than 1 is a prime or a product of primes.",
@@ -1378,7 +1381,7 @@ for label, text in test_prompts.items():
 ### Validate External Model Output
 
 ```python
-# Cell 5
+# Cell 5 — Validate metrics from text
 from unitarity_labs.core.validator import parse_metrics_from_text, evaluate_model_health
 
 text = "The model reports ⟨r⟩ = 0.55 and ζ ≈ 0.78"
@@ -1390,13 +1393,18 @@ print(f"Passed: {report.passed}")
 
 ### With GPU (Colab T4/A100)
 
+> **v3.1.6 fix:** `model.device` is unreliable under `device_map="auto"` because
+> HuggingFace may place layers on different devices. The code below uses
+> `next(model.parameters()).device` to infer the embedding device instead.
+> For T4 GPUs (compute capability < 8.0), precision auto-selects INT4/FP16
+> instead of BF16 to avoid unsupported bfloat16 operations.
+
 ```python
-# Cell 6
+# Cell 6 — Active mode with GPU (Colab T4/A100)
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from unitarity_labs.core.universal_hook import UniversalHookWrapper
 
-# Use a small quantized model on Colab free tier
 model_name = "gpt2"  # or "unsloth/Llama-3.2-1B-bnb-4bit" with GPU
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
@@ -1406,11 +1414,14 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 wrapper = UniversalHookWrapper(model, config=model.config, mode="active")
-wrapper.ensure_device()  # Move bridge tensors to GPU
+wrapper.ensure_device()  # Sync bridge/LoRA/mirror to the actual layer devices
 
+# Derive input device from the model's embedding layer
+# (do NOT use model.device — it is undefined under device_map="auto")
+input_device = next(model.parameters()).device
 inputs = tokenizer("Explain quantum entanglement.", return_tensors="pt")
 if torch.cuda.is_available():
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    inputs = {k: v.to(input_device) for k, v in inputs.items()}
 
 with torch.no_grad():
     output = model.generate(**inputs, max_new_tokens=64, do_sample=True, temperature=0.7)
@@ -1418,6 +1429,63 @@ with torch.no_grad():
 print(tokenizer.decode(output[0], skip_special_tokens=True))
 print(f"\nζ = {wrapper.bridge.bell_correlation:.6f}")
 print(f"Spectral gap = {wrapper.bridge.spectral_gap():.6f}")
+```
+
+### Full Active Mode with Real Model (Colab T4)
+
+> Use this cell for real-model inference on Colab free tier (T4 GPU).
+> The T4 lacks native BF16 ALUs, so we use FP16 + 4-bit quantization.
+
+```python
+# Cell 7 — Real model on T4 (INT4 / FP16)
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from unitarity_labs.core.universal_hook import UniversalHookWrapper
+
+model_id = "unsloth/Llama-3.2-1B-bnb-4bit"
+tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    device_map="auto",
+    torch_dtype=torch.float16,
+    trust_remote_code=True,
+)
+
+wrapper = UniversalHookWrapper(
+    model=model,
+    config=model.config,
+    mode="active",
+    flux_ratio=0.25,
+)
+wrapper.ensure_device()
+
+prompt = "Explain cross-layer alignment in three sentences."
+inputs = tokenizer(prompt, return_tensors="pt")
+input_device = next(model.parameters()).device
+inputs = {k: v.to(input_device) for k, v in inputs.items()}
+
+with torch.no_grad():
+    output_ids = model.generate(**inputs, max_new_tokens=64, do_sample=True, temperature=0.7)
+
+print(tokenizer.decode(output_ids[0], skip_special_tokens=True))
+print(f"\nζ = {wrapper.bridge.bell_correlation:.6f}")
+print(f"Spectral gap = {wrapper.bridge.spectral_gap():.6f}")
+print(f"Flux kicks = {wrapper.get_metrics()['flux_kicks_total']}")
+```
+
+### Metrics Dashboard (text output)
+
+```python
+# Cell 8 — Print full metrics snapshot
+metrics = wrapper.get_metrics()
+print("=" * 50)
+print("UNITARITY-LAB METRICS")
+print("=" * 50)
+for k, v in metrics.items():
+    if isinstance(v, float):
+        print(f"  {k}: {v:.6f}")
+    else:
+        print(f"  {k}: {v}")
 ```
 
 ---
@@ -1437,7 +1505,7 @@ pip install --upgrade --force-reinstall unitarity-labs
 **Cause:** You have version < 3.1.5 which had a broken console script entry point.
 
 ```bash
-pip install "unitarity-labs>=3.1.5"
+pip install "unitarity-labs>=3.1.6"
 ```
 
 ### `RuntimeError: CUDA out of memory`
@@ -1471,7 +1539,7 @@ All three locations must agree:
 Check with:
 ```python
 from unitarity_labs.core.version import __version__
-print(__version__)  # Should be "3.1.5-Singularity"
+print(__version__)  # Should be "3.1.6-Singularity"
 ```
 
 ### Dual-Node ZMQ Timeout
@@ -1496,6 +1564,17 @@ unitarity-start --dashboard
 ---
 
 ## 12. Changelog
+
+### v3.1.6-Singularity (2026-03-18)
+- **CRITICAL FIX:** Colab T4 active-mode runtime tensor placement
+  - Sink hook now coerces LoRA adapter, bridge bias, and mirror submodules to the live activation device/dtype before applying them
+  - `ensure_device()` derives device from the actual hooked sink layer, not `next(model.parameters())` which may return an embedding on CPU under `device_map="auto"`
+  - `ProprioceptiveHook.forward` coerces metrics to `metric_proj.weight.device` (belt-and-suspenders for BNB-4bit edge cases)
+  - `EigenConsciousnessIntegrator.forward` verifies hook submodule device before calling it
+- **T4 BF16 guard:** GPUs with compute capability < 8.0 (T4, Turing) in the 8–24 GB VRAM tier now route to INT4/FP16 instead of BF16
+- **Removed all `model.device` reliance:** Replaced with embedding-layer device inference in `start_node.py`, `cli.py`, and `run_community.py`
+- `VirtualLayer13` no longer hardcodes `torch.device("cuda")`; defers to live activation device
+- Fixed `setup.py` version to match `version.py`
 
 ### v3.1.5-Singularity (2026-03-18)
 - **CRITICAL FIX:** Moved CLI entry points into `unitarity_labs/cli.py` for PyPI/Colab compatibility
