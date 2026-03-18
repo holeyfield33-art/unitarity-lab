@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 import torch
 
-from core.chronos_lock import (
+from unitarity_labs.core.chronos_lock import (
     DESYNC_BASE_THRESHOLD,
     ENTROPY_DRIFT_LIMIT,
     PROBATION_CONSECUTIVE,
@@ -30,7 +30,7 @@ from core.chronos_lock import (
     TPS_CLIP_MIN,
     ChronosLock,
 )
-from core.kill_switch import ByzantineVoting, NodeStatus
+from unitarity_labs.core.kill_switch import ByzantineVoting, NodeStatus
 
 
 # ======================================================================

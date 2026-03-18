@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 import torch
 
-from core.metrics import manifold_coherence_zeta, baseline_cosine_meanpool, permutation_test_zeta
+from unitarity_labs.core.metrics import manifold_coherence_zeta, baseline_cosine_meanpool, permutation_test_zeta
 
 
 def make_parser(description: str) -> argparse.ArgumentParser:

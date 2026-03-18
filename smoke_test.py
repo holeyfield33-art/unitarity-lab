@@ -1,6 +1,6 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from core.universal_hook import UniversalHookWrapper
+from unitarity_labs.core.universal_hook import UniversalHookWrapper
 
 # 1. Setup
 model_name = "gpt2"

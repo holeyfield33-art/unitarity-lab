@@ -73,7 +73,7 @@ def test_spectral_rigidity_gue_attractor():
               register_geometric_hooks() before model forward pass.
     """
     pytest.importorskip("torch")
-    from core.universal_hook import UniversalHookWrapper
+    from unitarity_labs.core.universal_hook import UniversalHookWrapper
 
     # Load buffer — must have run inference first
     try:

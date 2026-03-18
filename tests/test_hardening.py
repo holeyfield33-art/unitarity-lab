@@ -43,7 +43,7 @@ class _ToyConfig:
 
 def _make_wrapper(mode: str = "active", enable_dual: bool = False):
     """Build a UniversalHookWrapper around a ToyTransformer."""
-    from core.universal_hook import UniversalHookWrapper
+    from unitarity_labs.core.universal_hook import UniversalHookWrapper
 
     model = ToyTransformer(d_model=64, num_layers=13)
     return UniversalHookWrapper(
@@ -61,11 +61,11 @@ def _make_wrapper(mode: str = "active", enable_dual: bool = False):
 
 class TestVersionConsistency:
     def test_core_version_is_singularity(self):
-        from core.version import __version__
+        from unitarity_labs.core.version import __version__
         assert __version__ == "3.1.1-Singularity"
 
     def test_init_reexports_version(self):
-        import core
+        import unitarity_labs.core as core
         assert hasattr(core, "__version__")
         assert core.__version__ == "3.1.1-Singularity"
 
@@ -90,28 +90,28 @@ class TestVersionConsistency:
 
 class TestThreeTierImports:
     def test_core_import(self):
-        import core
+        import unitarity_labs.core as core
         assert hasattr(core, "UniversalHookWrapper")
         assert hasattr(core, "manifold_coherence_zeta")
 
     def test_dist_import(self):
-        import dist
+        import unitarity_labs.dist as dist
         assert hasattr(dist, "__version__")
 
     def test_dist_tier_manager(self):
-        from dist.tier_manager import TierManager, NodeTier
+        from unitarity_labs.dist.tier_manager import TierManager, NodeTier
         tm = TierManager()
         assert tm is not None
         assert NodeTier.COMPUTE.value == "COMPUTE"
         assert NodeTier.ROUTER.value == "ROUTER"
 
     def test_labs_import(self):
-        import labs
+        import unitarity_labs.labs as labs
         # labs is experimental — just check it imports
         assert labs is not None
 
     def test_labs_topology_metrics(self):
-        from labs.topology_metrics import spectral_gap_from_activations
+        from unitarity_labs.labs.topology_metrics import spectral_gap_from_activations
         act = {0: torch.randn(1, 16, 64), 1: torch.randn(1, 16, 64)}
         result = spectral_gap_from_activations(act)
         assert isinstance(result, dict)
@@ -125,13 +125,13 @@ class TestThreeTierImports:
 
 class TestZetaMetric:
     def test_identical_tensors_yield_zeta_one(self):
-        from core.metrics import manifold_coherence_zeta
+        from unitarity_labs.core.metrics import manifold_coherence_zeta
         t = torch.randn(2, 32, 64)
         z = manifold_coherence_zeta(t, t)
         assert abs(z - 1.0) < 1e-5
 
     def test_orthogonal_tensors_yield_low_zeta(self):
-        from core.metrics import manifold_coherence_zeta
+        from unitarity_labs.core.metrics import manifold_coherence_zeta
         a = torch.zeros(1, 4, 8)
         a[0, 0, 0] = 1.0
         b = torch.zeros(1, 4, 8)
@@ -140,14 +140,14 @@ class TestZetaMetric:
         assert abs(z) < 1e-5
 
     def test_baseline_cosine_range(self):
-        from core.metrics import baseline_cosine_meanpool
+        from unitarity_labs.core.metrics import baseline_cosine_meanpool
         a = torch.randn(1, 16, 64)
         b = torch.randn(1, 16, 64)
         c = baseline_cosine_meanpool(a, b)
         assert -1.0 <= c <= 1.0
 
     def test_permutation_test_reproducibility(self):
-        from core.metrics import permutation_test_zeta
+        from unitarity_labs.core.metrics import permutation_test_zeta
         a = torch.randn(1, 16, 64)
         b = a + 0.01 * torch.randn(1, 16, 64)
         z1, p1 = permutation_test_zeta(a, b, n_perm=50, seed=123)
@@ -176,7 +176,7 @@ class TestPassiveMode:
         w = _make_wrapper.__wrapped__(model_wrapped) if hasattr(_make_wrapper, '__wrapped__') else None
 
         # Build wrapper directly to reuse same model
-        from core.universal_hook import UniversalHookWrapper
+        from unitarity_labs.core.universal_hook import UniversalHookWrapper
         torch.manual_seed(42)
         m = ToyTransformer(d_model=64, num_layers=13)
         wrapper = UniversalHookWrapper(
@@ -227,7 +227,7 @@ class TestActiveMode:
         assert m["mode"] == "active"
 
     def test_invalid_mode_raises(self):
-        from core.universal_hook import UniversalHookWrapper
+        from unitarity_labs.core.universal_hook import UniversalHookWrapper
         model = ToyTransformer(d_model=64, num_layers=13)
         with pytest.raises(ValueError, match="mode must be"):
             UniversalHookWrapper(model=model, config=_ToyConfig(), mode="invalid")
@@ -246,7 +246,7 @@ class TestChronosLockIsolation:
 
     def test_dist_chronos_imports(self):
         """dist.chronos_lock must be importable."""
-        from dist.chronos_lock import ChronosLock
+        from unitarity_labs.dist.chronos_lock import ChronosLock
         assert ChronosLock is not None
 
 
@@ -256,19 +256,19 @@ class TestChronosLockIsolation:
 
 class TestTierPolicing:
     def test_attest_compute(self):
-        from dist.tier_manager import TierManager, NodeTier
+        from unitarity_labs.dist.tier_manager import TierManager, NodeTier
         tm = TierManager(min_compute_tps=10.0)
         tier = tm.attest("node-1", tps_ema=20.0, tps_variance=1.0)
         assert tier == NodeTier.COMPUTE
 
     def test_attest_router(self):
-        from dist.tier_manager import TierManager, NodeTier
+        from unitarity_labs.dist.tier_manager import TierManager, NodeTier
         tm = TierManager(min_compute_tps=10.0)
         tier = tm.attest("node-1", tps_ema=5.0, tps_variance=0.5)
         assert tier == NodeTier.ROUTER
 
     def test_demotion_on_wait(self):
-        from dist.tier_manager import TierManager, NodeTier
+        from unitarity_labs.dist.tier_manager import TierManager, NodeTier
         tm = TierManager(min_compute_tps=10.0)
         tm.attest("node-1", tps_ema=20.0, tps_variance=1.0)
         # Simulate excessive wait that triggers demotion
@@ -277,7 +277,7 @@ class TestTierPolicing:
         assert rec.tier == NodeTier.ROUTER
 
     def test_compute_quorum(self):
-        from dist.tier_manager import TierManager
+        from unitarity_labs.dist.tier_manager import TierManager
         tm = TierManager(min_compute_tps=10.0)
         tm.attest("a", tps_ema=20.0, tps_variance=1.0)
         tm.attest("b", tps_ema=20.0, tps_variance=1.0)
@@ -289,7 +289,7 @@ class TestTierPolicing:
 
     def test_router_quorum_bypass(self):
         """Router nodes should not count toward compute quorum."""
-        from dist.tier_manager import TierManager
+        from unitarity_labs.dist.tier_manager import TierManager
         tm = TierManager(min_compute_tps=10.0)
         tm.attest("r1", tps_ema=5.0, tps_variance=0.5)
         tm.attest("r2", tps_ema=5.0, tps_variance=0.5)
@@ -303,12 +303,12 @@ class TestTierPolicing:
 
 class TestDiversitySnapshot:
     def test_snapshot_monitor_creates(self):
-        from core.diversity_snapshot import DiversitySnapshotMonitor
+        from unitarity_labs.core.diversity_snapshot import DiversitySnapshotMonitor
         mon = DiversitySnapshotMonitor()
         assert mon is not None
 
     def test_should_disable_bridge_during_solo(self):
-        from core.diversity_snapshot import DiversitySnapshotMonitor
+        from unitarity_labs.core.diversity_snapshot import DiversitySnapshotMonitor
         mon = DiversitySnapshotMonitor()
         # Advance to snapshot interval
         for _ in range(4096):
@@ -316,7 +316,7 @@ class TestDiversitySnapshot:
         assert mon.should_disable_bridge is True
 
     def test_collapse_detection(self):
-        from core.diversity_snapshot import DiversitySnapshotMonitor
+        from unitarity_labs.core.diversity_snapshot import DiversitySnapshotMonitor
         mon = DiversitySnapshotMonitor()
 
         h = torch.randn(1, 16, 64)
@@ -383,10 +383,10 @@ class TestBenchmarkHarness:
 class TestSmokeTests:
     def test_core_only_import(self):
         """Importing core alone must not raise."""
-        import core  # noqa: F401
+        import unitarity_labs.core as core  # noqa: F401
 
     def test_dist_import(self):
-        import dist  # noqa: F401
+        import unitarity_labs.dist as dist  # noqa: F401
 
     def test_labs_import(self):
-        import labs  # noqa: F401
+        import unitarity_labs.labs as labs  # noqa: F401

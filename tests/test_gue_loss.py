@@ -5,7 +5,7 @@ Verifies differentiability and gradient flow through LoRA adapters.
 
 import torch
 import pytest
-from core.gue_loss import GUELoss
+from unitarity_labs.core.gue_loss import GUELoss
 
 
 @pytest.mark.geometric_brain

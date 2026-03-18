@@ -21,7 +21,7 @@ import pytest
 import torch
 from typing import Optional, Sequence
 
-from core.semantic_lock import (
+from unitarity_labs.core.semantic_lock import (
     AnchorConsensusGossip,
     NonceCommitProtocol,
     NonceCommitState,
@@ -623,8 +623,8 @@ class TestRecursiveMirrorSemanticLock:
     """Ghost layer integration with SemanticLockController."""
 
     def test_attach_semantic_lock(self, toy_model):
-        from core.ghost_layer import RecursiveMirror
-        from core.bridge import CrossLayerEntanglementHook
+        from unitarity_labs.core.ghost_layer import RecursiveMirror
+        from unitarity_labs.core.bridge import CrossLayerEntanglementHook
 
         class MockCfg:
             hidden_size = 64
@@ -646,8 +646,8 @@ class TestRecursiveMirrorSemanticLock:
         bridge.remove_hooks()
 
     def test_semantic_lock_none_by_default(self, toy_model):
-        from core.ghost_layer import RecursiveMirror
-        from core.bridge import CrossLayerEntanglementHook
+        from unitarity_labs.core.ghost_layer import RecursiveMirror
+        from unitarity_labs.core.bridge import CrossLayerEntanglementHook
 
         class MockCfg:
             hidden_size = 64

@@ -5,7 +5,7 @@ Canonical location: core/semantic_lock.py (to be migrated).
 **EXPERIMENTAL**: This module is a research prototype.
 """
 
-from core.semantic_lock import (
+from unitarity_labs.core.semantic_lock import (
     SemanticLockController,
     SemanticModulator,
     AnchorConsensusGossip,

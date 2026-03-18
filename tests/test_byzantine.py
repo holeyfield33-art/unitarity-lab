@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from core.precision_projector import (
+from unitarity_labs.core.precision_projector import (
     CANONICAL_DTYPE,
     DequantAdapter,
     PrecisionClass,
@@ -22,11 +22,11 @@ from core.precision_projector import (
     get_projector,
     has_projector,
 )
-from core.handshake import (
+from unitarity_labs.core.handshake import (
     IncompatibleNode,
     validate_precision_pair,
 )
-from core.kill_switch import (
+from unitarity_labs.core.kill_switch import (
     GRACEFUL_THRESHOLD,
     HARD_SEVER_THRESHOLD,
     READMIT_EPOCHS,
@@ -34,8 +34,8 @@ from core.kill_switch import (
     ByzantineVoting,
     NodeStatus,
 )
-from core.dual_link import DualNodeEntanglementBridge
-from core.bridge import CrossLayerEntanglementHook
+from unitarity_labs.core.dual_link import DualNodeEntanglementBridge
+from unitarity_labs.core.bridge import CrossLayerEntanglementHook
 
 # Reuse conftest fixtures
 from tests.conftest import ToyTransformer

@@ -21,9 +21,9 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from core.virtual_layer13 import VirtualLayer13
-from core.safety_head import SafetyHead
-from core.kill_switch import ByzantineVoting
+from unitarity_labs.core.virtual_layer13 import VirtualLayer13
+from unitarity_labs.core.safety_head import SafetyHead
+from unitarity_labs.core.kill_switch import ByzantineVoting
 
 
 # ======================================================================

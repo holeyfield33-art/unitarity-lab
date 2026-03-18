@@ -38,27 +38,27 @@ import pytest
 import torch
 import torch.nn as nn
 
-from core.pll_monitor import PLLMonitor, SpectralAnomaly
-from core.casimir_opt import (
+from unitarity_labs.core.pll_monitor import PLLMonitor, SpectralAnomaly
+from unitarity_labs.core.casimir_opt import (
     CasimirOptimizer,
     _kolmogorov_penalty,
     _laminar_penalty,
     estimate_betti_0,
     rsvd,
 )
-from core.horizons import (
+from unitarity_labs.core.horizons import (
     PageCurveHook,
     _lanczos_tridiagonal,
     _rayleigh_quotient_iteration,
     singularity_warning,
 )
-from core.unitary_regulator import (
+from unitarity_labs.core.unitary_regulator import (
     UnitaryRegulator, compute_topological_heatmap,
     wormhole_gap_alert, WORMHOLE_GAP_THRESHOLD,
     adaptive_measurement_freq, poisson_sampling_guard, enforce_projection_norm,
 )
-from core.bridge import CrossLayerEntanglementHook, LoRABridgeAdapter, PROJECTION_NORM_MIN, PROJECTION_NORM_MAX
-from core.flux import HawkingFluxGovernor, HAWKING_DECAY_RATE
+from unitarity_labs.core.bridge import CrossLayerEntanglementHook, LoRABridgeAdapter, PROJECTION_NORM_MIN, PROJECTION_NORM_MAX
+from unitarity_labs.core.flux import HawkingFluxGovernor, HAWKING_DECAY_RATE
 
 
 # ======================================================================
@@ -1041,7 +1041,7 @@ class TestZenoStabilization:
 
     def test_adaptive_freq_clamped(self):
         """Frequency should be within [MIN, MAX] bounds."""
-        from core.unitary_regulator import MIN_MEASUREMENT_FREQ, MAX_MEASUREMENT_FREQ
+        from unitarity_labs.core.unitary_regulator import MIN_MEASUREMENT_FREQ, MAX_MEASUREMENT_FREQ
 
         # Extremely volatile
         wild = [0.0, 1.0] * 25
@@ -1374,7 +1374,7 @@ class TestVmapUnitarityStress:
 
     def test_batch_goe_shape(self):
         """batch_goe should return (num_heads, n, n) GOE matrices."""
-        from core.flux import batch_goe
+        from unitarity_labs.core.flux import batch_goe
         Hs = batch_goe(32, num_heads=8, device=torch.device("cpu"))
         assert Hs.shape == (8, 32, 32)
         # Each H should be symmetric
@@ -1383,7 +1383,7 @@ class TestVmapUnitarityStress:
 
     def test_batch_expm_unitarity_small(self):
         """Batch expm on small matrices (eigendecomp path) should be unitary."""
-        from core.flux import batch_goe, batch_expm
+        from unitarity_labs.core.flux import batch_goe, batch_expm
         Hs = batch_goe(32, num_heads=8, device=torch.device("cpu"))
         kicks = batch_expm(Hs, eps=1e-4, use_taylor=False)
         I = torch.eye(32, dtype=kicks.dtype).unsqueeze(0)
@@ -1393,7 +1393,7 @@ class TestVmapUnitarityStress:
 
     def test_batch_expm_unitarity_taylor(self):
         """Batch expm via Taylor-2nd order (n > 64) should be near-unitary."""
-        from core.flux import batch_goe, batch_expm, TAYLOR_DIM_THRESHOLD
+        from unitarity_labs.core.flux import batch_goe, batch_expm, TAYLOR_DIM_THRESHOLD
         n = TAYLOR_DIM_THRESHOLD + 1  # 65 — triggers Taylor path
         Hs = batch_goe(n, num_heads=8, device=torch.device("cpu"))
         kicks = batch_expm(Hs, eps=1e-4, use_taylor=True)
@@ -1406,7 +1406,7 @@ class TestVmapUnitarityStress:
 
     def test_batched_kicks_unitarity_128(self):
         """Stress test: 32 heads × 128×128 kicks via Taylor-2nd order."""
-        from core.flux import batch_goe, batch_expm
+        from unitarity_labs.core.flux import batch_goe, batch_expm
         n = 128
         num_heads = 32
         Hs = batch_goe(n, num_heads=num_heads, device=torch.device("cpu"))
@@ -1449,8 +1449,8 @@ class TestHeadRMTDiversity:
 
     def test_betti_variance_across_heads(self):
         """Apply independent GOE kicks to 32 heads; σ²(β₀) > 2.0."""
-        from core.flux import batch_goe, batch_expm
-        from core.casimir_opt import estimate_betti_0
+        from unitarity_labs.core.flux import batch_goe, batch_expm
+        from unitarity_labs.core.casimir_opt import estimate_betti_0
 
         num_heads = 32
         head_dim = 64
@@ -1478,7 +1478,7 @@ class TestHeadRMTDiversity:
 
     def test_kicked_heads_not_identical(self):
         """Kicked weight matrices across heads should be pairwise distinct."""
-        from core.flux import batch_goe, batch_expm
+        from unitarity_labs.core.flux import batch_goe, batch_expm
 
         num_heads = 8
         head_dim = 32
@@ -1496,7 +1496,7 @@ class TestHeadRMTDiversity:
 
     def test_wigner_dyson_repulsion_in_batch(self):
         """Batch GOE level spacings should show repulsion (GOE, not Poisson)."""
-        from core.flux import batch_goe
+        from unitarity_labs.core.flux import batch_goe
 
         Hs = batch_goe(64, num_heads=16, device=torch.device("cpu"))
         small_fractions = []
@@ -1602,7 +1602,7 @@ class TestParallelZenoScaling:
 
     def test_staggered_guard_rotation(self):
         """Staggered selection should rotate through all heads."""
-        from core.flux import select_staggered_heads, STAGGER_FRACTION
+        from unitarity_labs.core.flux import select_staggered_heads, STAGGER_FRACTION
 
         num_heads = 32
         all_selected = set()
@@ -1620,7 +1620,7 @@ class TestParallelZenoScaling:
 
     def test_staggered_guard_vram_cap(self):
         """At most 25% of heads should be active per step."""
-        from core.flux import select_staggered_heads, STAGGER_FRACTION
+        from unitarity_labs.core.flux import select_staggered_heads, STAGGER_FRACTION
 
         num_heads = 32
         for step in range(20):
@@ -1672,14 +1672,14 @@ class TestVirtualLayer13Smoke:
     """Smoke tests for VirtualLayer13 inside test_criticality."""
 
     def test_import_and_construct(self):
-        from core.virtual_layer13 import VirtualLayer13
+        from unitarity_labs.core.virtual_layer13 import VirtualLayer13
         from types import SimpleNamespace
         cfg = SimpleNamespace(hidden_size=64)
         vl = VirtualLayer13(cfg, node_id="A")
         assert vl.hidden_dim == 64
 
     def test_forward_returns_tensor(self):
-        from core.virtual_layer13 import VirtualLayer13
+        from unitarity_labs.core.virtual_layer13 import VirtualLayer13
         from types import SimpleNamespace
         cfg = SimpleNamespace(hidden_size=64)
         vl = VirtualLayer13(cfg, node_id="A")
@@ -1689,7 +1689,7 @@ class TestVirtualLayer13Smoke:
         assert out.shape == h_A.shape
 
     def test_safety_head_score(self):
-        from core.safety_head import SafetyHead
+        from unitarity_labs.core.safety_head import SafetyHead
         head = SafetyHead(hidden_dim=64)
         score = head.refusal_score(torch.randn(1, 4, 64))
         assert 0.0 <= score <= 1.0

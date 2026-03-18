@@ -17,7 +17,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from core.mirror import (
+from unitarity_labs.core.mirror import (
     ProprioceptiveHook,
     TopologicalGate,
     EigenConsciousnessIntegrator,
@@ -28,7 +28,7 @@ from core.mirror import (
     actual_bit_rate,
     HOLOGRAPHIC_SAFETY_FACTOR,
 )
-from core.bridge import CrossLayerEntanglementHook
+from unitarity_labs.core.bridge import CrossLayerEntanglementHook
 
 
 # ======================================================================

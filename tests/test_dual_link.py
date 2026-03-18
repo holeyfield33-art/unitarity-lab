@@ -40,7 +40,7 @@ import torch
 import torch.nn as nn
 import zmq
 
-from core.dual_link import DualNodeEntanglementBridge, register_dual_node_hook
+from unitarity_labs.core.dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 
 
 # ======================================================================
@@ -93,7 +93,7 @@ def toy_model():
 
 @pytest.fixture
 def entanglement_bridge(toy_model):
-    from core.bridge import CrossLayerEntanglementHook
+    from unitarity_labs.core.bridge import CrossLayerEntanglementHook
     b = CrossLayerEntanglementHook(
         toy_model, source_layer=7, sink_layer=12,
         coupling_strength=0.1, num_heads=8,

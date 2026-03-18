@@ -18,8 +18,8 @@ from typing import Dict, List, Optional
 
 import torch
 
-from core.unitary_regulator import compute_topological_heatmap
-from core.casimir_opt import estimate_betti_0
+from unitarity_labs.core.unitary_regulator import compute_topological_heatmap
+from unitarity_labs.core.casimir_opt import estimate_betti_0
 
 
 def spectral_gap_from_activations(

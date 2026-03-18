@@ -13,7 +13,7 @@ Displays:
 
 Usage::
 
-    from core.dashboard import HeartbeatDashboard
+    from unitarity_labs.core.dashboard import HeartbeatDashboard
     dash = HeartbeatDashboard(wrapper)
     dash.run()          # blocks, refreshes every 0.5s
     dash.run_once()     # single snapshot (for scripts)

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import torch
 
-from core.flux import batch_goe, batch_expm
+from unitarity_labs.core.flux import batch_goe, batch_expm
 
 
 def generate_unitary(dim: int) -> torch.Tensor:

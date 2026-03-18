@@ -30,9 +30,9 @@ import sys
 
 import torch
 
-from core.precision_projector import PrecisionClass
-from core.universal_hook import UniversalHookWrapper
-from core.version import __version__
+from unitarity_labs.core.precision_projector import PrecisionClass
+from unitarity_labs.core.universal_hook import UniversalHookWrapper
+from unitarity_labs.core.version import __version__
 
 
 # ======================================================================
@@ -235,7 +235,7 @@ def main() -> None:
 
     # --- Optional dashboard ---
     if args.dashboard:
-        from core.dashboard import HeartbeatDashboard
+        from unitarity_labs.core.dashboard import HeartbeatDashboard
         dash = HeartbeatDashboard(wrapper)
         dash.run_once()
 

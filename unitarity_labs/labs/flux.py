@@ -5,7 +5,7 @@ Canonical location: core/flux.py (to be migrated).
 **EXPERIMENTAL**: This module is a research prototype.
 """
 
-from core.flux import (
+from unitarity_labs.core.flux import (
     HawkingFluxGovernor,
     HAWKING_DECAY_RATE,
     batch_goe,

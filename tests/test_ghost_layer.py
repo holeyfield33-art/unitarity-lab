@@ -17,9 +17,9 @@ import pytest
 import torch
 import torch.nn as nn
 
-from core.ghost_layer import RecursiveMirror
-from core.bridge import CrossLayerEntanglementHook
-from core.kill_switch import ByzantineVoting, NodeStatus
+from unitarity_labs.core.ghost_layer import RecursiveMirror
+from unitarity_labs.core.bridge import CrossLayerEntanglementHook
+from unitarity_labs.core.kill_switch import ByzantineVoting, NodeStatus
 
 
 # ======================================================================

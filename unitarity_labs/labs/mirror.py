@@ -5,7 +5,7 @@ Canonical location: core/mirror.py (to be migrated).
 **EXPERIMENTAL**: This module is a research prototype.
 """
 
-from core.mirror import (
+from unitarity_labs.core.mirror import (
     ProprioceptiveHook,
     TopologicalGate,
     EigenConsciousnessIntegrator,

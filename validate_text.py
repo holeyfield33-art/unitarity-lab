@@ -27,7 +27,7 @@ import argparse
 import json
 import sys
 
-from core.validator import (
+from unitarity_labs.core.validator import (
     GROK_4_MARCH_2026_BENCHMARK,
     evaluate_model_health,
     log_audit,

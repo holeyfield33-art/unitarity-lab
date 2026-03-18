@@ -12,4 +12,4 @@ Modules:
   - topology_metrics: Experimental topology-derived metrics.
 """
 
-from core.version import __version__
+from unitarity_labs.core.version import __version__

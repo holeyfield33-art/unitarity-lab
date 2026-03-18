@@ -25,9 +25,9 @@ import argparse
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from core.universal_hook import UniversalHookWrapper
-from core.dashboard import HeartbeatDashboard
-from core.version import __version__
+from unitarity_labs.core.universal_hook import UniversalHookWrapper
+from unitarity_labs.core.dashboard import HeartbeatDashboard
+from unitarity_labs.core.version import __version__
 
 
 DEFAULT_MODEL = "unsloth/Llama-3.2-1B-bnb-4bit"
