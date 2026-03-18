@@ -164,7 +164,7 @@ Both nodes must be reachable on their respective ZeroMQ ports (default: 5555/555
 
 ## Example output
 
-```
+```text
 [Ghost] No CUDA GPU detected -> FP32 (CPU mode)
 [Ghost] Loading model: meta-llama/Llama-3.2-1B
 [Ghost] dtype=torch.float32, device_map=cpu
@@ -241,7 +241,7 @@ Note: the current benchmark harnesses use synthetic tensors to demonstrate the m
 
 ## Architecture
 
-```
+```text
 core/        Production modules. Metrics, bridge, hooks, dashboard,
              flux governor, mirror feedback, precision handling,
              kill switch, spectral analysis, and GUE loss.
@@ -311,7 +311,7 @@ See [GEOMETRIC_BRAIN.md](GEOMETRIC_BRAIN.md) for the full theory, methodology, a
 
 ## Repository map
 
-```
+```text
 unitarity-lab/
   start_node.py            CLI entry point (also: unitarity-start)
   core/                    Production runtime modules
@@ -341,10 +341,10 @@ unitarity-lab/
 
 ## Links
 
-- **GitHub:** https://github.com/holeyfield33-art/unitarity-lab
-- **PyPI:** https://pypi.org/project/unitarity-lab
-- **Live site:** https://holeyfield33-art.github.io/unitarity-lab
-- **Support:** https://buymeacoffee.com/holeyfielde
+- **GitHub:** <https://github.com/holeyfield33-art/unitarity-lab>
+- **PyPI:** <https://pypi.org/project/unitarity-lab>
+- **Live site:** <https://holeyfield33-art.github.io/unitarity-lab>
+- **Support:** <https://buymeacoffee.com/holeyfielde>
 
 ---
 

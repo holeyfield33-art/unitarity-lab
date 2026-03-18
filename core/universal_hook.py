@@ -144,6 +144,9 @@ class UniversalHookWrapper:
                 )
 
         self.step_counter = 0
+        self._step_hook_handle = None
+        self._register_step_hook()
+        self.ensure_device()
 
     # ------------------------------------------------------------------
     # Layer discovery
@@ -190,21 +193,37 @@ class UniversalHookWrapper:
             self.bridge.set_head_mask(self.head_mask)
 
     # ------------------------------------------------------------------
+    # Step hook registration
+    # ------------------------------------------------------------------
+    def _register_step_hook(self) -> None:
+        """Register a forward hook on layer 0 to track steps.
+
+        This ensures the step counter, head rotation, and
+        re-orthogonalization fire on every forward pass — including
+        when called via model.generate(), which bypasses __call__.
+        """
+        def _step_hook(_module, _input, _output):
+            self.step_counter += 1
+            if self.mode == "active":
+                if self.step_counter % self.head_rotate_steps == 0:
+                    self._rotate_heads()
+                if self.step_counter % self.reorth_interval == 0:
+                    self.bridge.reorthogonalize()
+
+        handle = self.layers[0].register_forward_hook(_step_hook)
+        self._step_hook_handle = handle
+
+    # ------------------------------------------------------------------
     # Forward pass
     # ------------------------------------------------------------------
     def __call__(self, *args, **kwargs):
         """Forward pass through the wrapped model.
 
-        Hooks fire automatically via PyTorch; head mask rotates every
-        ``head_rotate_steps`` steps.  In passive mode, rotation and
-        re-orthogonalization are skipped.
+        Hooks fire automatically via PyTorch; step tracking, head
+        rotation, and re-orthogonalization are handled by the step
+        hook on layer 0, so they run whether this method or
+        model.generate() is the caller.
         """
-        self.step_counter += 1
-        if self.mode == "active":
-            if self.step_counter % self.head_rotate_steps == 0:
-                self._rotate_heads()
-            if self.step_counter % self.reorth_interval == 0:
-                self.bridge.reorthogonalize()
         return self.model(*args, **kwargs)
 
     # ------------------------------------------------------------------
@@ -245,8 +264,36 @@ class UniversalHookWrapper:
             return (0, 0)
 
     def remove_hooks(self) -> None:
-        """Remove all hooks registered by the bridge."""
+        """Remove all hooks registered by the bridge and step tracker."""
         self.bridge.remove_hooks()
+        if self._step_hook_handle is not None:
+            self._step_hook_handle.remove()
+            self._step_hook_handle = None
+
+    def ensure_device(self) -> None:
+        """Move all bridge sub-modules to the model's device and dtype.
+
+        Call this after construction when the model is on CUDA.
+        Ensures LoRA adapter, mirror, gate, and proprioceptive hook
+        tensors match the model's device to prevent cross-device errors
+        during model.generate().
+        """
+        device = next(self.model.parameters()).device
+        dtype = next(self.model.parameters()).dtype
+
+        # LoRA adapter (lora_A, lora_B, lora_B_projection)
+        if hasattr(self.bridge, 'lora_adapter'):
+            self.bridge.lora_adapter.to(device=device, dtype=dtype)
+
+        # EigenConsciousnessIntegrator (ProprioceptiveHook + TopologicalGate)
+        if hasattr(self.bridge, 'mirror'):
+            self.bridge.mirror.to(device=device, dtype=dtype)
+
+        # RecursiveMirror
+        if hasattr(self, 'recursive_mirror') and hasattr(self.recursive_mirror, 'to'):
+            self.recursive_mirror.to(device=device, dtype=dtype)
+
+        _log.info("Bridge components moved to %s / %s", device, dtype)
 
     # ── Geometric Brain Buffer ──────────────────────────────────────────
     # Stores post-MLP hidden states for spectral rigidity analysis.
