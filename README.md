@@ -25,7 +25,7 @@ A runtime for instrumenting Hugging Face transformer models and measuring cross-
 ### Install from PyPI
 
 ```bash
-pip install unit6labs
+pip install unitarity-labs
 ```
 
 ### Install from source
@@ -342,7 +342,7 @@ unitarity-lab/
 ## Links
 
 - **GitHub:** <https://github.com/holeyfield33-art/unitarity-lab>
-- **PyPI:** <https://pypi.org/project/unit6labs>
+- **PyPI:** <https://pypi.org/project/unitarity-labs>
 - **Live site:** <https://holeyfield33-art.github.io/unitarity-lab>
 - **Support:** <https://buymeacoffee.com/holeyfielde>
 
