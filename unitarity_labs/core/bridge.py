@@ -135,6 +135,7 @@ class CrossLayerEntanglementHook:
         self.flux_epsilon = flux_epsilon
         self.num_heads = num_heads
         self._enabled = True
+        self._device = None
 
         accessor = layer_accessor or (lambda m: m.layers)
         self.layers: nn.ModuleList = accessor(model)
@@ -207,11 +208,24 @@ class CrossLayerEntanglementHook:
         )
         self._handles.append(h_sink)
 
+    def _get_device(self):
+        """Get the device from the model or LoRA projection."""
+        if self._device is not None:
+            return self._device
+        try:
+            self._device = next(self.lora_adapter.parameters()).device
+            return self._device
+        except (StopIteration, AttributeError):
+            pass
+        return torch.device('cpu')
+
     def _source_hook(
         self, _module: nn.Module, _input: tuple, output: torch.Tensor
     ) -> None:
         """Capture source layer activation and extract eigenvectors."""
         act = output[0] if isinstance(output, (tuple, list)) else output
+        if self._device is None and isinstance(act, torch.Tensor):
+            self._device = act.device
         self._source_activation = act.detach()
 
         if self._enabled:
@@ -229,8 +243,23 @@ class CrossLayerEntanglementHook:
 
         act = output[0] if isinstance(output, (tuple, list)) else output
 
+        # --- Active-mode device/dtype coercion (Colab split-device fix) ---
+        # The sink activation lives on whatever device HF placed this layer;
+        # bridge tensors may still be on CPU or a different CUDA ordinal.
+        _dev, _dt = act.device, act.dtype
+
+        # Coerce LoRA parameters to sink device/dtype once if needed
+        if next(self.lora_adapter.parameters()).device != _dev:
+            self.lora_adapter.to(device=_dev, dtype=_dt)
+
+        # Ensure bridge bias is on the right device/dtype
+        bridge_bias = self._bridge_bias
+        if bridge_bias.device != _dev or bridge_bias.dtype != _dt:
+            bridge_bias = bridge_bias.to(device=_dev, dtype=_dt)
+            self._bridge_bias = bridge_bias
+
         # Adapt bias shape to match sink activation
-        bias = self._adapt_bias(self._bridge_bias, act)
+        bias = self._adapt_bias(bridge_bias, act)
 
         # Apply LoRA adapter for low-rank projection (v1.2-stable)
         biased = self.lora_adapter(act) + self.coupling_strength * bias
@@ -251,6 +280,13 @@ class CrossLayerEntanglementHook:
 
         # Mirror Integration (v1.5): apply proprioceptive injection
         if hasattr(self, 'mirror') and self._enabled:
+            # Coerce mirror submodules to the live activation device;
+            # needed under device_map="auto" where ensure_device() may
+            # have used a stale parameter-derived device.
+            if hasattr(self.mirror, 'hook'):
+                _mp = getattr(self.mirror.hook, 'metric_proj', None)
+                if _mp is not None and next(_mp.parameters()).device != _dev:
+                    self.mirror.to(device=_dev, dtype=_dt)
             biased = self.mirror(biased)
 
         if isinstance(output, (tuple, list)):
@@ -392,7 +428,13 @@ class CrossLayerEntanglementHook:
         if source_act is None:
             return 0.0
 
-        s = source_act.detach().float().reshape(-1)
+        # Ensure tensors are on same device
+        device = sink_act.device
+        source = source_act.detach().float()
+        if source.device != device:
+            source = source.to(device)
+
+        s = source.reshape(-1)
         t = sink_act.detach().float().reshape(-1)
 
         # Match sizes (truncate to minimum)
@@ -534,10 +576,21 @@ class CrossLayerEntanglementHook:
 
     def diagnostics(self) -> Dict[str, object]:
         """Return bridge diagnostics for the unitary regulator."""
+        bell_corr = self._bell_correlation
+        if isinstance(bell_corr, torch.Tensor):
+            bell_corr = bell_corr.cpu().item()
+
+        try:
+            spectral_gap_val = self.spectral_gap()
+            if isinstance(spectral_gap_val, torch.Tensor):
+                spectral_gap_val = spectral_gap_val.cpu().item()
+        except Exception:
+            spectral_gap_val = 0.0
+
         diag = {
-            "bell_correlation": self._bell_correlation,
+            "bell_correlation": float(bell_corr),
             "bell_history_len": len(self._bell_history),
-            "spectral_gap": self.spectral_gap(),
+            "spectral_gap": float(spectral_gap_val),
             "source_layer": self.source_layer,
             "sink_layer": self.sink_layer,
             "top_k": self.top_k,
@@ -552,6 +605,7 @@ class CrossLayerEntanglementHook:
             "flux_step_counter": self.flux_governor._step_counter,
             "stagger_fraction": STAGGER_FRACTION,
             "enabled": self._enabled,
+            "device": str(self._get_device()),
         }
         if hasattr(self, 'mirror'):
             diag["mirror"] = self.mirror.diagnostics()

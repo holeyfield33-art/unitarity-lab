@@ -145,6 +145,12 @@ class ProprioceptiveHook(nn.Module):
         -------
         x' : Tensor of same shape as x — with proprioceptive injection.
         """
+        # Ensure metrics are on the same device as the projection weights
+        # (belt-and-suspenders for device_map="auto" / BNB-4bit edge cases)
+        _proj_dev = self.metric_proj.weight.device
+        if metrics.device != _proj_dev:
+            metrics = metrics.to(_proj_dev)
+
         # Project metrics to hidden dim and apply tanh saturation
         if metrics.dim() == 1:
             projected = self.metric_proj(metrics)  # (d_model,)
@@ -382,9 +388,20 @@ class EigenConsciousnessIntegrator(nn.Module):
         if hasattr(self.bridge, 'flux_governor'):
             flux_eps = float(self.bridge.flux_governor.epsilon)
 
+        # Infer device from bridge parameters if possible
+        _device = torch.device('cpu')
+        if hasattr(self.bridge, '_device') and self.bridge._device is not None:
+            _device = self.bridge._device
+        elif hasattr(self.bridge, 'lora_adapter'):
+            try:
+                _device = next(self.bridge.lora_adapter.parameters()).device
+            except (StopIteration, AttributeError):
+                pass
+
         metrics = torch.tensor(
             [lyapunov, bell, gap, flux_eps],
             dtype=torch.float32,
+            device=_device,
         )
 
         self._metric_history.append({
@@ -417,10 +434,19 @@ class EigenConsciousnessIntegrator(nn.Module):
         if metrics is None:
             metrics = self.collect_metrics()
 
+        # Ensure metrics are on the same device as x
+        if metrics.device != x.device:
+            metrics = metrics.to(x.device)
+
+        # Ensure hook submodule is on the activation device
+        _hook_dev = next(self.hook.parameters(), None)
+        if _hook_dev is not None and _hook_dev.device != x.device:
+            self.hook.to(x.device)
+
         # Compute gate value from phase synchronisation
         bell = metrics[1] if metrics.numel() > 1 else metrics[0]
-        phi_sync = torch.tensor(bell.item(), dtype=torch.float32)
-        zeno_signal = torch.tensor(self.get_zeno_signal(), dtype=torch.float32)
+        phi_sync = torch.tensor(bell.item(), dtype=torch.float32, device=x.device)
+        zeno_signal = torch.tensor(self.get_zeno_signal(), dtype=torch.float32, device=x.device)
         gate = self.gate(phi_sync, zeno_signal)
 
         # Apply gated proprioceptive injection

@@ -69,6 +69,12 @@ def detect_precision() -> PrecisionClass:
         print("[Ghost] < 8 GB VRAM → INT4 (quantised, laptop-class)")
         return PrecisionClass.INT4
     elif vram_gb < 24:
+        # T4 and similar Turing GPUs (compute capability < 8.0) lack
+        # native BF16 ALUs; route them through the INT4/FP16 path.
+        if props.major < 8:
+            print(f"[Ghost] 8–24 GB VRAM but compute capability "
+                  f"{props.major}.{props.minor} < 8.0 → INT4 (FP16 quant)")
+            return PrecisionClass.INT4
         print("[Ghost] 8–24 GB VRAM → BF16 (prosumer)")
         return PrecisionClass.BF16
     else:
@@ -96,6 +102,27 @@ DEFAULT_MODELS = {
     PrecisionClass.BF16: "meta-llama/Llama-3.2-1B",
     PrecisionClass.FP32: "meta-llama/Llama-3.2-1B",
 }
+
+
+def _input_device(model) -> torch.device:
+    """Infer the device inputs should be placed on.
+
+    With ``device_map='auto'`` the embedding table may be on a
+    different device than the decoder layers.  HF's generate()
+    dispatches through the embed layer first, so we take the
+    device of the embed_tokens (or first parameter as fallback).
+    """
+    for name in ('model.embed_tokens', 'transformer.wte'):
+        parts = name.split('.')
+        obj = model
+        try:
+            for p in parts:
+                obj = getattr(obj, p)
+            return next(obj.parameters()).device
+        except (AttributeError, StopIteration):
+            continue
+    # Fallback: first parameter
+    return next(model.parameters()).device
 
 
 def load_model(model_id: str, precision: PrecisionClass):
@@ -212,7 +239,7 @@ def main() -> None:
     print(f"\n[Node] Generating with prompt: {args.prompt!r}\n")
     inputs = tokenizer(args.prompt, return_tensors="pt")
     if torch.cuda.is_available():
-        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        inputs = {k: v.to(_input_device(model)) for k, v in inputs.items()}
 
     with torch.no_grad():
         output_ids = model.generate(

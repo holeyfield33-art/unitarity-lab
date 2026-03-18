@@ -77,7 +77,19 @@ def main() -> None:
           f"{wrapper.num_heads} heads active")
 
     # Generate
-    inputs = tokenizer(args.prompt, return_tensors="pt").to(model.device)
+    inputs = tokenizer(args.prompt, return_tensors="pt")
+    # Determine input device safely (device_map='auto' splits layers)
+    _dev = next(model.parameters()).device
+    try:
+        for _n in ('model.embed_tokens', 'transformer.wte'):
+            _obj = model
+            for _p in _n.split('.'):
+                _obj = getattr(_obj, _p)
+            _dev = next(_obj.parameters()).device
+            break
+    except (AttributeError, StopIteration):
+        pass
+    inputs = inputs.to(_dev)
     with torch.no_grad():
         output_ids = wrapper(**inputs, max_new_tokens=args.max_new_tokens).logits.argmax(dim=-1)
 

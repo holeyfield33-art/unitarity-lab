@@ -277,9 +277,27 @@ class UniversalHookWrapper:
         Ensures LoRA adapter, mirror, gate, and proprioceptive hook
         tensors match the model's device to prevent cross-device errors
         during model.generate().
+
+        When ``device_map="auto"`` is active, ``next(model.parameters())``
+        may return an embedding on CPU while transformer blocks live on
+        CUDA.  We therefore derive the authoritative device from the
+        *sink layer* that actually hosts the hook — this is the device
+        the sink activation will arrive on at runtime.
         """
-        device = next(self.model.parameters()).device
-        dtype = next(self.model.parameters()).dtype
+        # --- Derive device from the actual hooked sink layer, not the
+        #     global model parameter iterator (safe under device_map="auto")
+        try:
+            device = next(self.layers[self.last_idx].parameters()).device
+        except StopIteration:
+            device = next(self.model.parameters()).device
+        try:
+            dtype = next(self.layers[self.last_idx].parameters()).dtype
+        except StopIteration:
+            dtype = next(self.model.parameters()).dtype
+
+        # Set device reference on bridge
+        if hasattr(self.bridge, '_device'):
+            self.bridge._device = device
 
         # LoRA adapter (lora_A, lora_B, lora_B_projection)
         if hasattr(self.bridge, 'lora_adapter'):
@@ -292,6 +310,18 @@ class UniversalHookWrapper:
         # RecursiveMirror
         if hasattr(self, 'recursive_mirror') and hasattr(self.recursive_mirror, 'to'):
             self.recursive_mirror.to(device=device, dtype=dtype)
+
+        # Head mask
+        if hasattr(self, 'head_mask') and self.head_mask is not None:
+            self.head_mask = self.head_mask.to(device=device)
+
+        # Clear cached activations that may be on a stale device
+        if hasattr(self.bridge, '_source_activation') and self.bridge._source_activation is not None:
+            self.bridge._source_activation = self.bridge._source_activation.to(device)
+        if hasattr(self.bridge, '_bridge_eigenvectors') and self.bridge._bridge_eigenvectors is not None:
+            self.bridge._bridge_eigenvectors = self.bridge._bridge_eigenvectors.to(device)
+        if hasattr(self.bridge, '_bridge_bias') and self.bridge._bridge_bias is not None:
+            self.bridge._bridge_bias = self.bridge._bridge_bias.to(device)
 
         _log.info("Bridge components moved to %s / %s", device, dtype)
 

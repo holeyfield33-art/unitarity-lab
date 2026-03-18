@@ -173,7 +173,18 @@ def main() -> int:
     print(f"\n[Node] Generating with prompt: {args.prompt!r}\n")
     inputs = tokenizer(args.prompt, return_tensors="pt")
     if torch.cuda.is_available():
-        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        _dev = next(model.parameters()).device
+        try:
+            # Prefer embed layer device (safe under device_map='auto')
+            for _n in ('model.embed_tokens', 'transformer.wte'):
+                _obj = model
+                for _p in _n.split('.'):
+                    _obj = getattr(_obj, _p)
+                _dev = next(_obj.parameters()).device
+                break
+        except (AttributeError, StopIteration):
+            pass
+        inputs = {k: v.to(_dev) for k, v in inputs.items()}
 
     with torch.no_grad():
         output_ids = model.generate(

@@ -50,7 +50,9 @@ class VirtualLayer13(nn.Module):
         super().__init__()
         self.node_id = node_id
         self.hidden_dim = config.hidden_size
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Defer device to the first forward call; avoid hardcoding "cuda"
+        # which fails under device_map="auto" where layers are split.
+        self.device = torch.device("cpu")
 
         # Refusal basis (pre-computed for model family, ~64 vectors)
         if refusal_basis is None:
@@ -113,6 +115,10 @@ class VirtualLayer13(nn.Module):
         metrics : dict
         """
         metrics: dict = {}
+
+        # Coerce internal tensors to the live activation device/dtype
+        if self.refusal_basis.device != h_A.device:
+            self.refusal_basis = self.refusal_basis.to(device=h_A.device, dtype=h_A.dtype)
 
         # 1. Dual pre-interference refusal veto
         if refusal_A > 0.7 or refusal_B > 0.7:
