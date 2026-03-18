@@ -19,5 +19,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install build
-      - run: python -m build
+      - run: python -m build --outdir pypi_dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: pypi_dist/
