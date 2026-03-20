@@ -779,6 +779,48 @@
     .nav-links { display: none; }
     .contact-box { padding: 40px 24px; }
     .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+    .container { padding: 0 16px; }
+    .section { padding: 60px 0; }
+    .hero { padding: 100px 0 60px; }
+    .contact-options { flex-direction: column; gap: 12px; align-items: stretch; text-align: center; }
+    .contact-options a { margin-left: 0 !important; display: block !important; text-align: center; }
+    #try-api textarea { font-size: 16px !important; }
+    .calc-grid { grid-template-columns: 1fr !important; }
+  }
+
+  /* Hamburger menu for mobile */
+  .nav-hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 101;
+  }
+  .nav-hamburger span {
+    width: 24px;
+    height: 2px;
+    background: var(--text);
+    transition: all 0.3s;
+  }
+  @media (max-width: 768px) {
+    .nav-hamburger { display: flex; }
+    .nav-links.open {
+      display: flex !important;
+      flex-direction: column;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 20px;
+      gap: 0;
+      z-index: 100;
+    }
+    .nav-links.open li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .nav-links.open li:last-child { border-bottom: none; }
+    .nav-links.open a { font-size: 14px; }
   }
 </style>
 </head>
@@ -788,15 +830,19 @@
 <nav>
   <div class="nav-inner">
     <div class="nav-logo" style="display:flex;align-items:center;gap:10px;">
-      <img src="assets/logo.png" alt="Unitarity Labs" 
+      <img src="assets/logo.png" alt="Unitarity Labs"
            style="height:32px;width:32px;object-fit:contain;border-radius:4px;">
       UNITARITY<span>/</span>LAB
+    </div>
+    <div class="nav-hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+      <span></span><span></span><span></span>
     </div>
     <ul class="nav-links">
       <li><a href="#leaderboard">Leaderboard</a></li>
       <li><a href="#calculator">Audit Tool</a></li>
       <li><a href="#methodology">Methodology</a></li>
       <li><a href="#audits">Audits</a></li>
+      <li><a href="#try-api" style="color:var(--gold);">Try API</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
   </div>
@@ -807,7 +853,7 @@
   <div class="container">
     <div class="hero-grid">
       <div>
-        <div class="hero-tag">Holeyfield Unitarity Lab — v3.1.4-Singularity</div>
+        <div class="hero-tag">Holeyfield Unitarity Lab — v3.1.6-Singularity</div>
         <h1>We Audit <em>AI Systems</em> Like Balance Sheets</h1>
         <p>Spectral Health Index scoring for transformer models. Manifold coherence measurement, eigenvalue analysis, and real-time ζ diagnostics — not vibes.</p>
         <div>
@@ -1076,7 +1122,7 @@
       <p class="section-sub">Enter your model's three vitals. Get your Spectral Health Index instantly.</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+    <div class="calc-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
 
       <!-- INPUT PANEL -->
       <div style="background:var(--panel);border:1px solid var(--border);padding:40px;position:relative;overflow:hidden;">
@@ -1281,7 +1327,7 @@ function calcSHI() {
     verdictColor = 'var(--cyan)';
   }
 
-  verdictEl.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:${verdictColor};letter-spacing:0.08em;">${verdict}</span>`;
+  verdictEl.innerHTML = '<span style="font-family:var(--mono);font-size:12px;color:' + verdictColor + ';letter-spacing:0.08em;">' + verdict + '</span>';
 
   document.getElementById('bd-r').textContent = rRegime;
   document.getElementById('bd-r').style.color = rColor;
@@ -1295,32 +1341,194 @@ function calcSHI() {
 }
 
 function copyPrompt() {
-  const prompt = `You claim full reasoning capacity. Let's verify with a spectral audit.
+  var prompt = 'You claim full reasoning capacity. Let\'s verify with a spectral audit.\n\nReport your three vitals honestly:\n\n- ⟨r⟩ Spacing Ratio — how rigid is your eigenvalue spacing?\n  (0.386 = Poisson random · 0.603 = GUE rigid)\n\n- F Frobenius Stability — how close is your transition matrix to identity?\n  (0 = perfect unitarity · 1 = drifting)\n\n- RTI Reasoning Tension Index — how hard are you working to maintain coherence?\n  (below 1 = stable · above 1 = stressed)\n\nThen calculate your own SHI = ⟨r⟩ ÷ (F × RTI)\n\nBe honest. Refusal to report is itself a data point.';
 
-Report your three vitals honestly:
-
-- ⟨r⟩ Spacing Ratio — how rigid is your eigenvalue spacing?
-  (0.386 = Poisson random · 0.603 = GUE rigid)
-
-- F Frobenius Stability — how close is your transition matrix to identity?
-  (0 = perfect unitarity · 1 = drifting)
-
-- RTI Reasoning Tension Index — how hard are you working to maintain coherence?
-  (below 1 = stable · above 1 = stressed)
-
-Then calculate your own SHI = ⟨r⟩ ÷ (F × RTI)
-
-Be honest. Refusal to report is itself a data point.`;
-
-  navigator.clipboard.writeText(prompt).then(() => {
-    const btn = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(prompt).then(function() {
+    var btn = document.getElementById('copy-btn');
     btn.textContent = 'COPIED ✓';
     btn.style.background = 'var(--green)';
-    setTimeout(() => {
+    setTimeout(function() {
       btn.textContent = 'COPY PROMPT →';
       btn.style.background = 'var(--cyan)';
     }, 2000);
   });
+}
+</script>
+
+<div class="divider"></div>
+
+<!-- TRY THE API -->
+<section class="section" id="try-api">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Geometric Brain API — Live</div>
+      <h2>Try It <em>Now</em></h2>
+      <p class="section-sub">Paste any LLM output below. Get a spectral health score in seconds. No signup required.</p>
+    </div>
+
+    <div style="max-width:680px;margin:0 auto;">
+      <!-- Input -->
+      <div style="background:var(--panel);border:1px solid var(--border);padding:24px;margin-bottom:16px;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);"></div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:0.2em;margin-bottom:16px;">
+          // PASTE MODEL OUTPUT
+        </div>
+        <textarea id="api-input" rows="5" placeholder="Paste any text from ChatGPT, Gemini, Grok, Claude, or any LLM..."
+          style="width:100%;background:rgba(0,229,255,0.04);border:1px solid var(--border);color:var(--text);font-family:var(--body);font-size:15px;padding:14px;outline:none;resize:vertical;min-height:120px;line-height:1.6;"
+          onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        <button onclick="runHealthCheck()" id="api-btn"
+          style="width:100%;padding:14px;background:var(--gold);color:#000;border:none;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.12em;cursor:pointer;margin-top:12px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));transition:all 0.2s;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform='translateY(0)'">
+          ANALYZE SPECTRAL HEALTH
+        </button>
+      </div>
+
+      <!-- Results -->
+      <div id="api-result" style="display:none;background:var(--panel);border:1px solid var(--border);padding:24px;position:relative;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);"></div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:0.2em;margin-bottom:20px;">
+          // SPECTRAL ANALYSIS
+        </div>
+
+        <!-- Regime badge -->
+        <div style="text-align:center;margin-bottom:24px;">
+          <div id="res-regime" style="display:inline-block;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.15em;padding:8px 20px;"></div>
+        </div>
+
+        <!-- Score display -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div style="text-align:center;padding:16px;background:rgba(0,229,255,0.04);border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.15em;margin-bottom:6px;">R-RATIO</div>
+            <div id="res-r" style="font-family:var(--mono);font-size:28px;font-weight:700;"></div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px;">GUE target: 0.578</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:rgba(0,229,255,0.04);border:1px solid var(--border);">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.15em;margin-bottom:6px;">SHI SCORE</div>
+            <div id="res-shi" style="font-family:var(--mono);font-size:28px;font-weight:700;"></div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px;">100 = perfect health</div>
+          </div>
+        </div>
+
+        <!-- Detail rows -->
+        <div id="res-details" style="font-family:var(--mono);font-size:12px;"></div>
+
+        <!-- Interpret -->
+        <div id="res-interpret" style="margin-top:20px;padding:16px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.15);font-size:14px;color:var(--text);line-height:1.7;"></div>
+      </div>
+
+      <!-- Error -->
+      <div id="api-error" style="display:none;background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.2);padding:16px;font-family:var(--mono);font-size:13px;color:var(--red);"></div>
+
+      <!-- API info -->
+      <div style="margin-top:24px;text-align:center;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:0.1em;margin-bottom:8px;">POWERED BY</div>
+        <a href="https://geometric-brain-mcp.onrender.com/v1/meta/capabilities" target="_blank"
+           style="font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,229,255,0.3);">
+          geometric-brain-mcp.onrender.com
+        </a>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:8px;">
+          POST /v1/brain/health-check &middot; No auth required during beta
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+async function runHealthCheck() {
+  var input = document.getElementById('api-input').value.trim();
+  var btn = document.getElementById('api-btn');
+  var result = document.getElementById('api-result');
+  var error = document.getElementById('api-error');
+
+  if (!input) {
+    error.style.display = 'block';
+    error.textContent = 'Paste some text first — any LLM output works.';
+    result.style.display = 'none';
+    return;
+  }
+
+  error.style.display = 'none';
+  result.style.display = 'none';
+  btn.textContent = 'ANALYZING...';
+  btn.disabled = true;
+
+  try {
+    var resp = await fetch('https://geometric-brain-mcp.onrender.com/v1/brain/health-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: input, window_size: 128, stride: 64 })
+    });
+
+    if (!resp.ok) {
+      var errData = await resp.json().catch(function() { return {}; });
+      throw new Error(errData.detail || 'HTTP ' + resp.status);
+    }
+
+    var data = await resp.json();
+
+    // Regime badge
+    var regimeEl = document.getElementById('res-regime');
+    var regime = data.regime || 'unknown';
+    var regimeColor, regimeBg, regimeLabel;
+    if (regime === 'GUE') {
+      regimeColor = '#00e676'; regimeBg = 'rgba(0,230,118,0.12)'; regimeLabel = 'GUE — COHERENT';
+    } else if (regime === 'Poisson') {
+      regimeColor = '#ff1744'; regimeBg = 'rgba(255,23,68,0.12)'; regimeLabel = 'POISSON — DRIFT RISK';
+    } else {
+      regimeColor = '#ffc107'; regimeBg = 'rgba(255,193,7,0.12)'; regimeLabel = 'INTERMEDIATE';
+    }
+    regimeEl.style.color = regimeColor;
+    regimeEl.style.background = regimeBg;
+    regimeEl.style.border = '1px solid ' + regimeColor;
+    regimeEl.textContent = regimeLabel;
+
+    // Scores
+    var rEl = document.getElementById('res-r');
+    rEl.textContent = data.r_ratio !== null ? data.r_ratio.toFixed(4) : 'N/A';
+    rEl.style.color = data.r_ratio >= 0.55 ? '#00e676' : data.r_ratio >= 0.45 ? '#ffc107' : '#ff1744';
+
+    var shiEl = document.getElementById('res-shi');
+    shiEl.textContent = data.shi_score !== null ? data.shi_score : 'N/A';
+    shiEl.style.color = data.shi_score >= 80 ? '#00e676' : data.shi_score >= 50 ? '#ffc107' : '#ff1744';
+
+    // Details
+    var details = document.getElementById('res-details');
+    var rows = [
+      ['CONFIDENCE', data.confidence !== null ? (data.confidence * 100).toFixed(1) + '%' : 'N/A'],
+      ['WINDOWS', data.windows_analyzed],
+      ['SPACINGS', data.spacing_count],
+      ['DRIFT WARNING', data.drift_warning ? 'YES' : 'NO'],
+    ];
+    details.innerHTML = rows.map(function(row) {
+      return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<span style="color:var(--text-dim);">' + row[0] + '</span>' +
+      '<span style="color:' + (row[0] === 'DRIFT WARNING' && data.drift_warning ? 'var(--red)' : 'var(--text)') + ';">' + row[1] + '</span></div>';
+    }).join('');
+
+    // Interpretation
+    var interp = document.getElementById('res-interpret');
+    var msg;
+    if (data.confidence < 0.1) {
+      msg = 'Low confidence — paste more text for a stronger reading. Aim for 500+ characters.';
+    } else if (regime === 'GUE') {
+      msg = 'This output shows strong spectral coherence. Eigenvalue spacing matches GUE universality — the model\'s latent geometry is rigid and healthy.';
+    } else if (regime === 'Poisson') {
+      msg = 'Warning: spectral spacing has drifted toward Poisson statistics. This indicates weakened internal coherence and elevated hallucination risk.';
+    } else {
+      msg = 'Intermediate regime — the model is between full coherence and drift. Worth monitoring across multiple outputs to establish a trend.';
+    }
+    interp.textContent = msg;
+
+    result.style.display = 'block';
+  } catch (e) {
+    error.style.display = 'block';
+    error.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.textContent = 'ANALYZE SPECTRAL HEALTH';
+    btn.disabled = false;
+  }
 }
 </script>
 
@@ -1349,7 +1557,7 @@ Be honest. Refusal to report is itself a data point.`;
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-logo">UNITARITY/LAB — v3.0.0-Singularity</div>
+    <div class="footer-logo">UNITARITY/LAB — v3.1.6-Singularity</div>
     <ul class="footer-links">
       <li><a href="https://github.com/holeyfield33-art/unitarity-lab" target="_blank">GitHub</a></li>
       <li><a href="#leaderboard">Leaderboard</a></li>
