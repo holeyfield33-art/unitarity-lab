@@ -434,6 +434,54 @@
     margin-bottom: 48px;
   }
 
+  .hf-guide {
+    margin-bottom: 28px;
+    border-left: 3px solid #00da9a;
+  }
+
+  .hf-steps {
+    margin: 14px 0 18px 18px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .hf-steps li {
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .hf-steps code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: rgba(0,218,154,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #00da9a;
+  }
+
+  .metric-interp {
+    margin: 12px 0 0 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.65;
+    list-style: none;
+    padding: 0;
+  }
+
+  .metric-interp li {
+    padding: 6px 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .metric-interp li:first-child {
+    border-top: none;
+  }
+
+  .deeper-card {
+    border-top: 2px solid rgba(0,198,255,0.3);
+  }
+
   .consent-panel {
     background: rgba(255, 177, 71, 0.1);
     border: 1px solid rgba(255, 177, 71, 0.45);
@@ -754,6 +802,24 @@
     <h2 class="section-title">Self-Serve Audit Hub</h2>
     <p class="section-intro">Educational research-station workflow for spectral audits and coherence analysis.</p>
     
+    <!-- HuggingFace model connection guide -->
+    <div class="card hf-guide">
+      <h3 class="method-title">How to connect your HuggingFace model</h3>
+      <p class="muted-note">Three paths from any HuggingFace model to a spectral audit. The notebook is the fastest start.</p>
+      <ol class="hf-steps">
+        <li>
+          <strong>Load your model in the starter notebook</strong> — Click <em>Launch Gemma 4 Starter Notebook</em> below. The notebook imports any HuggingFace model via <code>AutoModelForCausalLM.from_pretrained("your/model-id")</code>, attaches activation hooks, and computes hidden-state eigenvalues automatically.
+        </li>
+        <li>
+          <strong>Run the coherence estimator</strong> — <code>estimate_coherence_score(model, tokenizer, prompt)</code> returns the k=1 Berry-Keating invariant and a GUE r-statistic proxy. Paste those numbers into the result panel below for tier classification.
+        </li>
+        <li>
+          <strong>Interpret your numbers</strong> — Use the Foundational Methods cards below to decode what your k-value and r-statistic mean. For production-grade hidden-state and eigenvalue analysis, follow the links in the Deeper Analysis section.
+        </li>
+      </ol>
+      <a href="notebooks/gemma4_starter.ipynb" id="notebook-btn-guide" class="mini-btn notebook-launch-btn" aria-label="Launch Gemma 4 starter notebook">Launch Gemma 4 Starter Notebook</a>
+    </div>
+
     <div class="grid-2 audit-grid">
       <div class="card">
         <div class="proxy-banner">Research-grade educational workflow. Local spectral analysis runs in-browser. External text proxy is disabled by default and requires explicit opt-in.</div>
@@ -796,19 +862,44 @@
         <span class="label">Spectral Rigidity</span>
         <h3 class="method-title">GUE Ensemble Target</h3>
         <p class="metric-value">r ≈ 0.603</p>
-        <p>Gaussian Unitary Ensemble spectral rigidity target. Deviations indicate coherence or structure in eigenvalue distributions relative to Random Matrix Theory baseline.</p>
+        <p>The GUE (Gaussian Unitary Ensemble) r-statistic measures the average ratio of consecutive eigenvalue gaps in the model's hidden-state weight matrices. Random Matrix Theory predicts r ≈ 0.603 for systems with time-reversal symmetry breaking — the same distribution observed in chaotic quantum systems.</p>
+        <ul class="metric-interp">
+          <li><strong>r near 0.603:</strong> Eigenvalue spacing matches GUE prediction — normal spectral rigidity, no anomalous structure detected.</li>
+          <li><strong>r &lt; 0.53 (Poisson limit):</strong> Eigenvalue repulsion breaks down — possible layer collapse, weight degeneracy, or uncorrelated blocks. Investigate with hidden-state analysis.</li>
+          <li><strong>r &gt; 0.65:</strong> Stronger-than-expected eigenvalue repulsion — possible over-regularization, rank deficiency, or unusual training dynamics.</li>
+        </ul>
       </article>
       <article class="card">
         <span class="label">Coherence Invariant</span>
         <h3 class="method-title">Berry–Keating k=1</h3>
         <p class="metric-value">k = 1</p>
-        <p>Berry–Keating invariant with k-value = 1. Signals first-order coherence structure in hidden-state geometry and spectral correlations.</p>
+        <p>The Berry–Keating k-value characterizes coherence structure in the activation manifold geometry. k=1 corresponds to first-order coherence — the model's latent representations form a smooth, well-conditioned geometry consistent with stable information flow across layers.</p>
+        <ul class="metric-interp">
+          <li><strong>k = 1:</strong> First-order coherence intact. Latent geometry is well-conditioned. Model activations exhibit expected spectral correlations.</li>
+          <li><strong>k = 0:</strong> No detectable coherence structure. Activations are uncorrelated — possible dead layers, catastrophic interference, or meaningless residual stream.</li>
+          <li><strong>k &gt; 1:</strong> Higher-order coherence detected. Can indicate strong geometric structure from fine-tuning, or — at high values — pathological entanglement between representations that should be independent.</li>
+        </ul>
+      </article>
+    </div>
+
+    <h3 class="section-title section-mini-title">Deeper Analysis</h3>
+    <p class="section-intro section-mini-intro">Text proxy mode is a screening shortcut only. For production-grade results, connect directly to the research engine or the API layer.</p>
+    <div class="grid-2">
+      <article class="card deeper-card">
+        <span class="label">Research Engine</span>
+        <h3 class="method-title">Unitarity-lab</h3>
+        <p>Full hidden-state and eigenvalue instrumentation. Attach activation hooks, run reproducible audit notebooks, export audit trails. This is where numbers like your r-statistic and k-value are derived from real hidden states rather than text proxies.</p>
+        <p class="muted-note"><a href="https://github.com/holeyfield33-art/unitarity-lab" target="_blank" rel="noopener noreferrer" class="btn-tertiary">Open research engine →</a></p>
+      </article>
+      <article class="card deeper-card">
+        <span class="label">API + MCP Front Door</span>
+        <h3 class="method-title">Geometric Brain MCP</h3>
+        <p>REST API, MCP server, and Python SDK for spectral diagnostics and model comparison workflows. Integrate into CI pipelines, compare model checkpoints, or run batch audits across a model family without custom instrumentation.</p>
+        <p class="muted-note"><a href="https://github.com/holeyfield33-art/geometric-brain-mcp" target="_blank" rel="noopener noreferrer" class="btn-tertiary">Get API access →</a></p>
       </article>
     </div>
   </div>
 </section>
-
-<section id="ecosystem">
   <div class="container">
     <h2 class="section-title">Ecosystem Paths</h2>
     <p class="section-intro">Two core strategies for audit and monitoring integration.</p>
