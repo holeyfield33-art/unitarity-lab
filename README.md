@@ -1,6 +1,25 @@
 # unitarity-lab
 
-A runtime for instrumenting Hugging Face transformer models and measuring cross-layer alignment during inference, with passive (metrics-only) and active (intervention) modes.
+Geometric Assurance is a spectral diagnostics and model integrity suite for transformer systems. This repository, `unitarity-lab`, is the research and audit engine for deep instrumentation, hidden-state analysis, and reproducible experiments.
+
+`unitarity-lab` is not the main product landing surface. The canonical public entry point is `geometric-brain-mcp` (API, MCP, and Python interface), with `VAR` as the advanced monitoring layer for pilot and enterprise beta workflows.
+
+## Suite architecture
+
+- **Geometric-brain-mcp**: API, MCP, and Python interface for spectral diagnostics, comparisons, and audit workflows.
+- **Unitarity-lab**: research and audit engine for deep instrumentation, hidden-state analysis, and reproducible experiments.
+- **VAR**: enterprise beta monitoring layer for drift, anomaly, and integrity workflows.
+
+Related repositories:
+
+- [geometric-brain-mcp](https://github.com/holeyfield33-art/geometric-brain-mcp)
+- [unitarity-lab](https://github.com/holeyfield33-art/unitarity-lab)
+- [VAR](https://github.com/holeyfield33-art/VAR)
+
+Evidence tiers:
+
+- Primary evidence-bearing modes: hidden-state analysis and eigenvalue analysis.
+- Text proxy mode is an indirect, demo-only, low-evidence screening path and is not equivalent to hidden-state or eigenvalue analysis.
 
 ## Status
 
