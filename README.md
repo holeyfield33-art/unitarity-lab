@@ -25,6 +25,13 @@ Evidence tiers:
 
 > **Alpha software.** APIs may change between releases. Benchmark results are preliminary. Use at your own discretion.
 
+## Security and privacy
+
+- Security policy and threat model: [SECURITY.md](SECURITY.md)
+- Self-Serve Audit Hub external proxy mode is opt-in and disabled by default.
+- Local spectral analysis runs in-browser; outbound proxy requests are only attempted after explicit consent.
+- Notebook structure validation and execution checks run in CI via [notebook-validation workflow](.github/workflows/notebook-validation.yml).
+
 ---
 
 ## What it does

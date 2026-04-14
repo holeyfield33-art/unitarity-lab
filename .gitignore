@@ -6,3 +6,9 @@ __pycache__/
 build/
 .venv/
 mcp.json
+node_modules/
+test-results/
+playwright-report/
+notebooks/*.ipynb_checkpoints/
+executed_*.ipynb
+pypi_dist/
