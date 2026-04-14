@@ -44,3 +44,8 @@ unitarity-validate = "unitarity_labs.cli:validate_text_main"
 [tool.setuptools.packages.find]
 include = ["unitarity_labs", "unitarity_labs.*"]
 exclude = ["tests", "tests.*", "benchmarks", "benchmarks.*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "geometric_brain: spectral rigidity and GUE attractor tests for the Geometric Brain module",
+]
