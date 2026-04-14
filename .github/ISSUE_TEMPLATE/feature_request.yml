@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an idea to improve unitarity-lab
+labels: [enhancement]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-sentence proposal
+      placeholder: Add an API to export per-layer eigenspectra as parquet
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the interface and behavior you want
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who benefits and how success can be measured

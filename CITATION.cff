@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: "unitarity-lab"
+message: "If you use this software, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: "holeyfield33-art"
+version: "3.1.7"
+date-released: "2026-04-14"
+license: "MIT"
+repository-code: "https://github.com/holeyfield33-art/unitarity-lab"
+url: "https://github.com/holeyfield33-art/unitarity-lab"
+abstract: "Research and audit engine for transformer hidden-state instrumentation, spectral diagnostics, and reproducible coherence analysis workflows."
+keywords:
+  - transformers
+  - model-auditing
+  - spectral-analysis
+  - hidden-state
+  - ai-safety

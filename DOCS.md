@@ -1,6 +1,6 @@
 # Unitarity Labs — Official Documentation
 
-**Version 3.1.6-Singularity** | MIT License | Python ≥ 3.9
+**Version 3.1.7** | MIT License | Python >= 3.9
 
 > A runtime for instrumenting Hugging Face transformer models, measuring cross-layer spectral alignment during inference, and coordinating distributed model instances with Byzantine fault tolerance.
 

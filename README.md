@@ -1,6 +1,32 @@
 # unitarity-lab
 
+[![PyPI version](https://img.shields.io/pypi/v/unitarity-labs.svg)](https://pypi.org/project/unitarity-labs/)
+[![Python versions](https://img.shields.io/pypi/pyversions/unitarity-labs.svg)](https://pypi.org/project/unitarity-labs/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release to PyPI](https://img.shields.io/github/actions/workflow/status/holeyfield33-art/unitarity-lab/release.yml?label=Release%20to%20PyPI)](https://github.com/holeyfield33-art/unitarity-lab/actions/workflows/release.yml)
+[![Notebook Validation](https://img.shields.io/github/actions/workflow/status/holeyfield33-art/unitarity-lab/notebook-validation.yml?label=Notebook%20Validation)](https://github.com/holeyfield33-art/unitarity-lab/actions/workflows/notebook-validation.yml)
+
 Geometric Assurance is a spectral diagnostics and model integrity suite for transformer systems. This repository, `unitarity-lab`, is the research and audit engine for deep instrumentation, hidden-state analysis, and reproducible experiments.
+
+Professional summary:
+
+`unitarity-lab` is a research-grade instrumentation and audit engine for transformer models. It provides hidden-state and eigenvalue diagnostics, reproducible coherence metrics, and distributed runtime controls so teams can measure model integrity instead of relying on prompt-level impressions.
+
+## Why this repo matters
+
+- Hidden-state and eigenvalue analysis with transparent, testable metrics.
+- Reproducible workflows for local research, CI validation, and benchmark comparison.
+- Built-in pathways from notebook experimentation to API-driven audit operations.
+- Security-aware defaults for educational tooling and external proxy behavior.
+
+## Community and trust
+
+- Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security policy: [SECURITY.md](SECURITY.md)
+- Support channels: [SUPPORT.md](SUPPORT.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Citation metadata: [CITATION.cff](CITATION.cff)
 
 `unitarity-lab` is not the main product landing surface. The canonical public entry point is `geometric-brain-mcp` (API, MCP, and Python interface), with `VAR` as the advanced monitoring layer for pilot and enterprise beta workflows.
 
