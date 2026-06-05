@@ -255,7 +255,7 @@ class UniversalHookWrapper:
                             num_heads=self.num_heads,
                             dim=self.hidden_dim // self.num_heads,
                             device=next(self.model.parameters()).device,
-                            stagger=False,
+                            stagger=True,
                         )
                         self.bridge.reorthogonalize()
 

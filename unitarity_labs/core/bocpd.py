@@ -1,150 +1,188 @@
 """
-core/bocpd.py — Bayesian Online Changepoint Detection (BOCPD).
-============================================================
-Computes exact run-length posterior distributions over streaming anomaly inputs,
-featuring automatic pruning boundaries and a whitening filter to address non-stationarity.
+core/bocpd.py — Two-model log-space Bayesian Online Changepoint Detection.
+==========================================================================
+Replaces the previous single-NIG-prior detector (which misused probability
+density as probability and included a broken "surprise boost"). This
+implementation is the validated LockedBOCPDMonitor design that cleanly
+detects synthetic GUE→collapsed regime changes without false alarms on
+stable streams.
+
+Observation unit: r_ratio is fed directly (raw GUE ~0.64 stable, ~0.42
+collapsed). The old fused x = (zeta**0.65)*(r_ratio**0.35) is NOT used
+because all validated baselines and calibration data are in raw r-ratio
+units. zeta is accepted by process_step for API compatibility but is not
+used in the likelihood computation.
 """
 
 from __future__ import annotations
-import math
+
+from typing import Dict, List, Optional
+
 import numpy as np
-from scipy.stats import t
+from scipy.special import logsumexp
+from scipy.stats import norm
+
 
 class PredictiveAnomalyDetector:
-    """Predictive Bayesian Online Changepoint Detector for tracking model collapse regimes."""
+    """Two-model log-space BOCPD for detecting GUE→collapse regime shifts.
+
+    model_0 tracks the pre-change / GUE stable regime.
+    model_1 tracks the post-change / collapsed regime.
+
+    Parameters
+    ----------
+    hazard_rate : float
+        Expected steps between changepoints; hazard = 1 / hazard_rate.
+        Validated value is 1000 (hazard = 0.001).
+    threshold : float
+        Alarm threshold on P(changepoint) for external callers.
+    max_run_length : int
+        Maximum run-length hypotheses retained (older mass is pruned).
+    mean_0 : float or None
+        Mean of the stable-regime model. None triggers measured-baseline
+        calibration from the first warmup_steps observations.
+    std_0 : float
+        Standard deviation of the stable-regime model.
+    mean_1 : float
+        Mean of the collapsed-regime model (default 0.42).
+    std_1 : float
+        Standard deviation of the collapsed-regime model.
+    warmup_steps : int
+        Number of initial observations to collect before running detection.
+        During warm-up, process_step returns 0.0.
+    """
+
     def __init__(
         self,
-        hazard_rate: float = 500.0,  # Expected 1 collapse per 500 tokens (h = 0.002)
-        max_horizon: int = 256,
-        prune_threshold: float = 1e-5,
-        alpha0: float = 2.0,
-        beta0: float = 0.05,
-        kappa0: float = 1.0,
-        mu0: float = 0.75  # Target hybrid unperturbed baseline
-    ):
+        hazard_rate: float = 1000.0,
+        threshold: float = 0.95,
+        max_run_length: int = 500,
+        mean_0: Optional[float] = None,
+        std_0: float = 0.015,
+        mean_1: float = 0.42,
+        std_1: float = 0.015,
+        warmup_steps: int = 100,
+    ) -> None:
         self.hazard = 1.0 / hazard_rate
-        self.max_horizon = max_horizon
-        self.prune_threshold = prune_threshold
-        
-        # Hyperparameters for the Normal-Inverse-Gamma (NIG) Conjugate Prior
-        self.alpha0 = alpha0
-        self.beta0 = beta0
-        self.kappa0 = kappa0
-        self.mu0 = mu0
-        
-        # Active vector blocks for running hypotheses
-        self.alpha = np.array([alpha0])
-        self.beta = np.array([beta0])
-        self.kappa = np.array([kappa0])
-        self.mu = np.array([mu0])
-        
-        # Run-length posterior distribution vector: P(r_0 = 0) = 1.0
-        self.R = np.array([1.0])
-        self.ema = None
-        self.ema_alpha = 0.15
+        self.threshold = threshold
+        self.max_run_length = max_run_length
+        self._mean_0_init = mean_0           # None → calibrate from warm-up
+        self.mean_0: float = mean_0 if mean_0 is not None else 0.0
+        self.std_0 = std_0
+        self.mean_1 = mean_1
+        self.std_1 = std_1
+        self.warmup_steps = warmup_steps
+
+        # Pre-calibrated when mean_0 is provided explicitly
+        self.calibrated: bool = mean_0 is not None
+        self._warmup_done: bool = mean_0 is not None
+        self._warmup_buffer: List[float] = []
+        self.t: int = 0
+
+        # Log-space run-length posterior; P(r_0 = 0) = 1 → log = 0
+        self._log_R = np.array([0.0])
+
+    # ------------------------------------------------------------------
+    # Log-likelihood helpers (evaluated at call time; safe after calibration)
+    # ------------------------------------------------------------------
+
+    def _log_p0(self, x: float) -> float:
+        return float(norm.logpdf(x, loc=self.mean_0, scale=self.std_0))
+
+    def _log_p1(self, x: float) -> float:
+        return float(norm.logpdf(x, loc=self.mean_1, scale=self.std_1))
+
+    # ------------------------------------------------------------------
+    # Warm-up calibration
+    # ------------------------------------------------------------------
+
+    def _finish_warmup(self) -> None:
+        """Calibrate model_0 from the warm-up buffer (if mean_0 was None)."""
+        buf = np.asarray(self._warmup_buffer)
+        if self._mean_0_init is None:
+            self.mean_0 = float(np.mean(buf))
+            # Floor std to avoid an over-confident zero-variance model
+            self.std_0 = float(max(float(np.std(buf)), 1e-3))
+        self.calibrated = True
+        self._warmup_done = True
+        # Reset to a clean prior so warm-up observations don't pollute the posterior
+        self._log_R = np.array([0.0])
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
 
     def process_step(self, zeta: float, r_ratio: float) -> float:
-        """Fuses metrics, whitens non-stationary drift, and updates run-length distributions.
-        
+        """Update the run-length posterior with one new observation.
+
+        Observation is r_ratio (raw GUE spacing ratio, not fused with zeta).
+        zeta is accepted for API compatibility with the orchestrator call site.
+
         Returns
         -------
-        changepoint_probability : float (Range [0.0, 1.0])
+        float
+            P(changepoint at this step) in [0.0, 1.0].
+            Returns 0.0 during the warm-up phase.
         """
-        # 1. Metric Fusion Core
-        raw_x = (zeta ** 0.65) * (r_ratio ** 0.35)
-        
-        # 2. Online Whitening Transformation
-        if self.ema is None:
-            self.ema = raw_x
+        x = r_ratio   # raw r-ratio; GUE stable ~0.64, collapsed ~0.42
+        self.t += 1
+
+        # --- Warm-up phase: collect buffer, skip inference ---
+        if not self._warmup_done:
+            self._warmup_buffer.append(x)
+            if len(self._warmup_buffer) >= self.warmup_steps:
+                self._finish_warmup()
             return 0.0
-        
-        self.ema = (self.ema_alpha * raw_x) + ((1.0 - self.ema_alpha) * self.ema)
-        whitened_x = raw_x - self.ema
 
-        # 3. Compute Student-t Predictive Likelihood Vector Across Active Hypotheses
-        dof = 2.0 * self.alpha
-        loc = self.mu
-        scale = np.sqrt((self.beta * (self.kappa + 1.0)) / (self.alpha * self.kappa))
-        
-        # Guard scale from zero or negative anomalies
-        scale = np.maximum(scale, 1e-9)
-        pred_likelihoods = t.pdf(whitened_x, df=dof, loc=loc, scale=scale)
-        pred_likelihoods = np.nan_to_num(pred_likelihoods, nan=1e-12)
+        # --- Log-space two-model BOCPD recursion ---
+        log_hazard = np.log(self.hazard)
+        log_1m_hazard = np.log(1.0 - self.hazard)
+        log_p0 = self._log_p0(x)
+        log_p1 = self._log_p1(x)
 
-        # Continue evidence under current active run-length hypotheses (for surprise detection)
-        cont_ev = float(np.sum(self.R * pred_likelihoods))
+        # Growth: run continued → P(r_t = k+1) ∝ P(r_{t-1}=k) · p0(x) · (1−h)
+        log_growth = self._log_R + log_p0 + log_1m_hazard
 
-        # 4. Formulate Run-Length Growth vs Shift Realignment Matrices
-        current_len = len(self.R)
-        new_R = np.zeros(current_len + 1)
+        # Changepoint: run reset → P(r_t = 0) ∝ Σ_k P(r_{t-1}=k) · p1(x) · h
+        # p1 likelihood on the first observation of the new (collapsed) regime.
+        log_cp = float(logsumexp(self._log_R)) + log_p1 + log_hazard
 
-        # Predictive likelihood under the *prior* for a fresh changepoint hypothesis (r=0)
-        dof0 = 2.0 * self.alpha0
-        loc0 = self.mu0
-        scale0 = np.sqrt((self.beta0 * (self.kappa0 + 1.0)) / (self.alpha0 * self.kappa0))
-        scale0 = max(scale0, 1e-9)
-        cp_pred_lik = t.pdf(whitened_x, df=dof0, loc=loc0, scale=scale0)
-        cp_pred_lik = float(np.nan_to_num(cp_pred_lik, nan=1e-12))
+        new_log_R = np.empty(len(self._log_R) + 1)
+        new_log_R[0] = log_cp
+        new_log_R[1:] = log_growth
 
-        # Apply Growth rule (r_t = r_{t-1} + 1) and Changepoint rule (r_t = 0)
-        # Use old hypotheses' predictive for growth; use prior predictive for cp branch.
-        new_R[1:] = self.R * pred_likelihoods * (1.0 - self.hazard)
-        new_R[0] = cp_pred_lik * self.hazard   # (sum R == 1)
-
-        # Standardize distribution space
-        total_mass = np.sum(new_R)
-        if total_mass > 0.0:
-            self.R = new_R / total_mass
+        # Normalize in log-space
+        log_total = float(logsumexp(new_log_R))
+        if np.isfinite(log_total):
+            new_log_R -= log_total
         else:
-            self.R = np.zeros(current_len + 1)
-            self.R[0] = 1.0
+            # Numerical fallback: uniform over current hypotheses
+            new_log_R = np.full(len(new_log_R), -np.log(len(new_log_R)))
 
-        # 5. Continuous Parameter Updates
-        # Update continuing (grown) hypotheses from their previous posteriors + new obs
-        updated_kappa = self.kappa + 1.0
-        updated_mu = ((self.kappa * self.mu) + whitened_x) / updated_kappa
-        updated_alpha = self.alpha + 0.5
-        updated_beta = self.beta + (0.5 * self.kappa * ((whitened_x - self.mu) ** 2)) / updated_kappa
+        # Prune old run-length hypotheses to cap memory
+        if len(new_log_R) > self.max_run_length:
+            new_log_R = new_log_R[: self.max_run_length]
+            log_total = float(logsumexp(new_log_R))
+            if np.isfinite(log_total):
+                new_log_R -= log_total
 
-        # The new changepoint hypothesis (r=0) starts from prior and is updated with this obs
-        cp_kappa = self.kappa0 + 1.0
-        cp_mu = (self.kappa0 * self.mu0 + whitened_x) / cp_kappa
-        cp_alpha = self.alpha0 + 0.5
-        cp_beta = self.beta0 + (0.5 * self.kappa0 * ((whitened_x - self.mu0) ** 2)) / cp_kappa
+        self._log_R = new_log_R
+        return float(np.clip(np.exp(self._log_R[0]), 0.0, 1.0))
 
-        self.kappa = np.append(cp_kappa, updated_kappa)
-        self.mu = np.append(cp_mu, updated_mu)
-        self.alpha = np.append(cp_alpha, updated_alpha)
-        self.beta = np.append(cp_beta, updated_beta)
+    def diagnostics(self) -> Dict[str, object]:
+        """Current detector state for debugging and calibration audit."""
+        return {
+            "hazard": self.hazard,
+            "threshold": self.threshold,
+            "mean_0": self.mean_0,
+            "std_0": self.std_0,
+            "mean_1": self.mean_1,
+            "std_1": self.std_1,
+            "warmup_steps": self.warmup_steps,
+            "calibrated": self.calibrated,
+            "t": self.t,
+        }
 
-        # 6. Compute Pruning Boundary to Prevent Memory Growth
-        if len(self.R) > self.max_horizon:
-            keep_indices = np.where(self.R >= self.prune_threshold)[0]
-            if len(keep_indices) == 0 or keep_indices[0] != 0:
-                keep_indices = np.append(0, keep_indices)
-            
-            self.R = self.R[keep_indices]
-            self.kappa = self.kappa[keep_indices]
-            self.mu = self.mu[keep_indices]
-            self.alpha = self.alpha[keep_indices]
-            self.beta = self.beta[keep_indices]
-            
-            # Re-normalize trimmed vector weights
-            mass = np.sum(self.R)
-            if mass > 0:
-                self.R /= mass
 
-        changepoint_probability = float(self.R[0])
-
-        # Sensitivity boost for the unitarity-lab self-healing application:
-        # When the observation is surprising under *all* active run hypotheses
-        # (cont_ev << 1), report high confidence in a regime change so that
-        # alerts (>0.92) and proactive flux kicks (>0.95) can fire with low
-        # latency while preserving a low false-positive rate on stable data
-        # (where cont_ev is typically >1 and boost has no effect, R0 ~ hazard).
-        if cont_ev < 1.0:
-            surprise = max(0.0, 1.0 - cont_ev)
-            boost = min(0.999, 0.5 + 0.5 * surprise)
-            changepoint_probability = max(changepoint_probability, boost)
-
-        return changepoint_probability
+# Alias: the validated two-model detector is the canonical implementation
+LockedBOCPDMonitor = PredictiveAnomalyDetector

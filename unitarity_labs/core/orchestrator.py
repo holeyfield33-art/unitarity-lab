@@ -85,7 +85,7 @@ class Orchestrator:
         self._step: int = 0
 
         # Initialize predictive change detector alongside existing kernel stores
-        self.predictive_detector = PredictiveAnomalyDetector(hazard_rate=500.0)
+        self.predictive_detector = PredictiveAnomalyDetector(hazard_rate=1000.0)
         self.last_changepoint_prob = 0.0
 
     # ------------------------------------------------------------------
