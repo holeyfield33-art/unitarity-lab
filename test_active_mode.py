@@ -8,6 +8,7 @@ import torch
 import sys
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from unitarity_labs.core.universal_hook import UniversalHookWrapper
+from unitarity_labs.core.orchestrator import Orchestrator
 
 
 def test_active_mode():
@@ -40,6 +41,10 @@ def test_active_mode():
         flux_ratio=0.25
     )
 
+    # Wire predictive BOCPD orchestrator (for verification of integration)
+    orch = Orchestrator(dim=wrapper.hidden_dim)
+    wrapper.orchestrator = orch
+
     # Force device sync
     print("Ensuring device placement...")
     wrapper.ensure_device()
@@ -60,6 +65,23 @@ def test_active_mode():
         print(f"FAIL: Forward pass failed: {e}")
         return False
 
+    # Exercise generation path (triggers per-token _step_hook + BOCPD ingest)
+    print("\nRunning generation (to exercise BOCPD ingest during decode)...")
+    try:
+        gen_inputs = tokenizer("Test BOCPD: ", return_tensors="pt")
+        if cuda_available:
+            gen_inputs = {k: v.to('cuda') for k, v in gen_inputs.items()}
+        with torch.no_grad():
+            _ = model.generate(
+                **gen_inputs,
+                max_new_tokens=8,
+                do_sample=False,
+            )
+        print("PASS: Generation successful (BOCPD should have ingested steps)")
+    except Exception as e:
+        print(f"FAIL: Generation failed: {e}")
+        return False
+
     # Check metrics
     print("\nChecking metrics...")
     try:
@@ -68,6 +90,9 @@ def test_active_mode():
         for k, v in metrics.items():
             if isinstance(v, float):
                 print(f"   {k}: {v:.6f}")
+        # Explicitly surface BOCPD for verification
+        if "bocpd_changepoint_prob" in metrics:
+            print(f"   bocpd_changepoint_prob: {metrics['bocpd_changepoint_prob']:.6f}")
     except Exception as e:
         print(f"FAIL: get_metrics() failed: {e}")
         return False

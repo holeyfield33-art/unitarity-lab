@@ -26,6 +26,7 @@ from .validator import (
     log_audit,
     parse_metrics_from_text,
 )
+from .bocpd import PredictiveAnomalyDetector
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +84,15 @@ class Orchestrator:
         self._history: List[StepRecord] = []
         self._step: int = 0
 
+        # Initialize predictive change detector alongside existing kernel stores
+        self.predictive_detector = PredictiveAnomalyDetector(hazard_rate=500.0)
+        self.last_changepoint_prob = 0.0
+
     # ------------------------------------------------------------------
     # Core loop
     # ------------------------------------------------------------------
 
-    def ingest(self, hidden_state: NDArray[np.floating]) -> StepRecord:
+    def ingest(self, hidden_state: NDArray[np.floating], *, zeta: Optional[float] = None) -> StepRecord:
         """Process a single hidden-state vector.
 
         1. Build the outer-product matrix vvᵀ and wrap it in a
@@ -97,6 +102,13 @@ class Orchestrator:
            a :class:`SymmetryBreakWarning` **before** storing.
         3. Commit the vector to the :class:`ResonanceStore` and record
            the spectral density at the new state.
+
+        Parameters
+        ----------
+        zeta : float or None
+            Optional manifold coherence (ζ / bell correlation) to use for
+            BOCPD fusion. If omitted, falls back to previous spectral_density
+            or 0.85.
 
         Parameters
         ----------
@@ -130,6 +142,31 @@ class Orchestrator:
             sym = (candidate_kernel + candidate_kernel.T) / 2
             evals = np.linalg.eigvalsh(sym)
             r_ratio = get_r_ratio(evals)
+
+            # Extract companion metrics to execute Predictive Fusion
+            current_zeta = zeta if zeta is not None else getattr(self._store, "bell_correlation", None)
+            if current_zeta is None:
+                # proxy from prior spectral density (or default)
+                if self._history:
+                    current_zeta = self._history[-1].spectral_density
+                else:
+                    current_zeta = 0.85
+
+            # Update the predictive distribution tracker
+            self.last_changepoint_prob = self.predictive_detector.process_step(
+                zeta=current_zeta,
+                r_ratio=r_ratio,
+            )
+
+            # Predictive Warning Trigger with sustained multi-step debounce verification
+            if self.last_changepoint_prob > 0.92:
+                msg = (
+                    f"[BOCPD Alert] Step {self._step}: Structural regime transformation detected "
+                    f"with probability {self.last_changepoint_prob:.4f}. Manifold collapse imminent!"
+                )
+                warnings.warn(msg, SymmetryBreakWarning, stacklevel=2)
+                logger.warning(msg)
+                warned = True
 
             if r_ratio < self.r_warn:
                 msg = (

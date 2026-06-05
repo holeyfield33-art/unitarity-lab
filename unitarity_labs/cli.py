@@ -14,6 +14,7 @@ from typing import Optional
 import torch
 
 from unitarity_labs.core.precision_projector import PrecisionClass
+from unitarity_labs.core.orchestrator import Orchestrator
 from unitarity_labs.core.version import __version__
 
 
@@ -164,6 +165,10 @@ def main() -> int:
         initial_epoch_len=args.epoch_len,
         reorth_interval=256,
     )
+
+    # Wire predictive BOCPD orchestrator for active self-healing
+    orch = Orchestrator(dim=wrapper.hidden_dim)
+    wrapper.orchestrator = orch
 
     print(f"[Node] Bridge: layers {wrapper.mid_idx} → {wrapper.last_idx} "
           f"({wrapper.num_layers} total), "

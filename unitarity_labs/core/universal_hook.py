@@ -28,10 +28,13 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
+
+if TYPE_CHECKING:
+    from .orchestrator import Orchestrator
 
 from .bridge import CrossLayerEntanglementHook
 from .dual_link import register_dual_node_hook
@@ -65,6 +68,12 @@ class UniversalHookWrapper:
         Fraction of heads actively entangled (default 0.25).
     head_rotate_steps : int
         Steps between head-mask rotations (default 50).
+    reorth_interval : int
+        Steps between re-orthogonalization (default 256).
+    orchestrator : Orchestrator or None
+        Optional :class:`~core.orchestrator.Orchestrator` for ingesting
+        hidden-state telemetry into the BOCPD predictive detector (enables
+        proactive collapse intervention).
     """
 
     def __init__(
@@ -79,6 +88,7 @@ class UniversalHookWrapper:
         precision: PrecisionClass = PrecisionClass.BF16,
         initial_epoch_len: int = 16,
         reorth_interval: int = 256,
+        orchestrator: Optional["Orchestrator"] = None,
     ):
         if mode not in _VALID_MODES:
             raise ValueError(f"mode must be one of {_VALID_MODES}, got {mode!r}")
@@ -92,6 +102,7 @@ class UniversalHookWrapper:
         self.precision = precision
         self.initial_epoch_len = initial_epoch_len
         self.reorth_interval = reorth_interval
+        self.orchestrator: Optional["Orchestrator"] = orchestrator
 
         # Discover transformer layers
         self.layers = self._get_layers()
@@ -201,9 +212,53 @@ class UniversalHookWrapper:
         This ensures the step counter, head rotation, and
         re-orthogonalization fire on every forward pass — including
         when called via model.generate(), which bypasses __call__.
+
+        When an orchestrator is attached, every step also ingests a
+        representative hidden-state vector into the BOCPD detector
+        (for predictive changepoint tracking of manifold health).
         """
         def _step_hook(_module, _input, _output):
             self.step_counter += 1
+
+            # Ingest representative hidden state into orchestrator (for BOCPD)
+            # when attached. Uses last-token vector from layer-0 output as proxy.
+            if getattr(self, "orchestrator", None) is not None:
+                try:
+                    h = _output[0] if isinstance(_output, (tuple, list)) else _output
+                    if torch.is_tensor(h):
+                        vec = h.detach().to(torch.float32).cpu().numpy()
+                        if vec.ndim == 3:  # [B, S, D]
+                            vec = vec[0, -1]
+                        elif vec.ndim == 2:  # [S, D] or [B, D]
+                            vec = vec[-1] if vec.shape[0] > 1 else vec[0]
+                        if vec.ndim == 1 and vec.shape[0] == self.hidden_dim:
+                            zeta = getattr(self.bridge, "bell_correlation", 0.85)
+                            self.orchestrator.ingest(vec, zeta=zeta)
+                except Exception as exc:  # pragma: no cover
+                    _log.debug("Orchestrator ingest skipped: %s", exc)
+
+            # Access streaming orchestrator diagnostics if active
+            if hasattr(self, "orchestrator") and self.orchestrator is not None:
+                cp_prob = getattr(self.orchestrator, "last_changepoint_prob", 0.0)
+
+                # Predictive Intervention Trigger
+                if self.mode == "active" and cp_prob > 0.95:
+                    _log.warning(
+                        "[Proactive Reset] BOCPD probability=%s crossed the threshold. Resetting manifold.",
+                        f"{cp_prob:.4f}",
+                    )
+
+                    # Execute proactive weight manifold stabilization pass
+                    if hasattr(self.bridge, "flux_governor"):
+                        # Trigger an active multi-head topological kick to break reasoning loops
+                        self.bridge.flux_governor.get_batched_topological_kicks(
+                            num_heads=self.num_heads,
+                            dim=self.hidden_dim // self.num_heads,
+                            device=next(self.model.parameters()).device,
+                            stagger=False,
+                        )
+                        self.bridge.reorthogonalize()
+
             if self.mode == "active":
                 if self.step_counter % self.head_rotate_steps == 0:
                     self._rotate_heads()
@@ -244,6 +299,10 @@ class UniversalHookWrapper:
             "total_heads": self.num_heads,
             "step": self.step_counter,
         }
+        if getattr(self, "orchestrator", None) is not None:
+            metrics["bocpd_changepoint_prob"] = getattr(
+                self.orchestrator, "last_changepoint_prob", 0.0
+            )
         # v2.1: Recursive mirror diagnostics
         if hasattr(self, 'recursive_mirror'):
             mirror = self.recursive_mirror

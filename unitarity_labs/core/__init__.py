@@ -23,6 +23,8 @@ from .unitary_regulator import (
     adaptive_measurement_freq, poisson_sampling_guard, enforce_projection_norm,
 )
 from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
+from .orchestrator import Orchestrator
+from .bocpd import PredictiveAnomalyDetector
 
 __all__ = [
     "PLLMonitor",
@@ -64,4 +66,6 @@ __all__ = [
     "__version__",
     "UniversalHookWrapper",
     "manifold_coherence_zeta",
+    "Orchestrator",
+    "PredictiveAnomalyDetector",
 ]
