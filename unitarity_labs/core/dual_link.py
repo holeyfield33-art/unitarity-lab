@@ -82,7 +82,13 @@ class DualNodeEntanglementBridge:
 
     def send_krylov_basis(self, krylov_basis: torch.Tensor) -> None:
         """Compress and transmit Krylov subspace via SVD low-rank."""
-        U, _, _ = torch.svd_lowrank(krylov_basis.float(), q=self.krylov_dim)
+        A = krylov_basis.float()
+        # Clamp to matrix dims: small matrices can't be compressed to a larger rank
+        q_eff = min(self.krylov_dim, A.shape[-2], A.shape[-1])
+        if q_eff < 1:
+            U = A
+        else:
+            U, _, _ = torch.svd_lowrank(A, q=q_eff)
         msg = {
             'node': self.node_id,
             'basis': U.cpu().numpy(),
