@@ -37,7 +37,7 @@ def test_gue_loss_gradients():
 
 @pytest.mark.geometric_brain
 def test_gue_loss_perfect_input():
-    """Loss should approach zero when ⟨r⟩ ≈ 0.578."""
+    """Loss approaches zero when ⟨r⟩ ≈ 0.578 (operational target; GUE mean is 0.5996)."""
     criterion = GUELoss(target_r=0.578)
     # Small matrix — r-ratio will be computed
     matrix = torch.randn(16, 64, requires_grad=True)

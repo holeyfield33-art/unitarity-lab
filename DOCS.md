@@ -887,8 +887,11 @@ class HealthReport:
 
 Differentiable fine-tuning objective for GUE spectral rigidity. Uses Hutchinson's trace estimator (O(k·d²)) instead of full eigendecomposition (O(d³)).
 
+GUE ⟨r⟩ ≈ 0.5996 (Wigner surmise); empirically confirmed at 0.602 on sampled GUE spectra in this repo.
+
 ```python
 GUELoss(target_r: float = 0.578, n_vectors: int = 8)
+# target_r=0.578 is an operational target below the GUE mean (0.5996); not the GUE constant.
 
 loss_fn.forward(matrix: Tensor) → Tuple[Tensor, float]  # (loss, r_measured)
 ```

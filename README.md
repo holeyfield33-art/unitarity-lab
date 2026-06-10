@@ -341,7 +341,7 @@ The repo includes the Geometric Brain framework for measuring and enforcing GUE 
 ```python
 from core.gue_loss import GUELoss
 
-criterion = GUELoss(target_r=0.578)
+criterion = GUELoss(target_r=0.578)  # operational target; GUE mean is 0.5996
 loss, r_measured = criterion(lora_B @ lora_A)
 loss.backward()
 ```
