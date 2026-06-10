@@ -1,6 +1,9 @@
 """
 GUELoss — Fine-tuning objective for Geometric Brain spectral alignment.
-Enforces GUE spectral rigidity (target ⟨r⟩ = 0.578) during LoRA fine-tuning.
+Enforces GUE spectral rigidity during LoRA fine-tuning.
+
+The default operational_target_r=0.578 is a chosen operating point below
+the true GUE mean (0.5996, Wigner surmise); it is not the GUE constant.
 
 Holeyfield-AI Collaboration — Aletheia Sovereign Systems, 2026
 Status: [COMPUTATIONAL] — validated via TMRP Claude + Gemini session
@@ -23,6 +26,7 @@ class GUELoss(nn.Module):
     """
 
     def __init__(self, target_r: float = 0.578, n_vectors: int = 8):
+        # 0.578 is an operational target below the GUE mean (0.5996); not the GUE constant.
         super().__init__()
         self.target_r = target_r
         self.n_vectors = n_vectors

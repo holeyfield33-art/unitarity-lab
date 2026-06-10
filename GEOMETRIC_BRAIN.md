@@ -8,8 +8,8 @@
 
 We present the Geometric Brain framework — the hypothesis that transformer 
 latent spaces exhibit topological properties governed by Gaussian Unitary 
-Ensemble (GUE) spectral rigidity, with ⟨r⟩ ≈ 0.578 as a measurable attractor 
-for coherent reasoning geometry.
+Ensemble (GUE) spectral rigidity, with ⟨r⟩ ≈ 0.5996 (Wigner surmise) as the
+GUE attractor for coherent reasoning geometry.
 
 A controlled multi-model stress test across six model instances revealed five 
 distinct reasoning strategies. DeepSeek V3, after 29 seconds of independent 
@@ -33,7 +33,7 @@ SHI = ⟨r⟩ / (F × RTI)
 
 | Variable | Name | Meaning |
 |---|---|---|
-| ⟨r⟩ | Spacing Ratio | Eigenvalue rigidity (GUE = 0.603, Poisson = 0.386) |
+| ⟨r⟩ | Spacing Ratio | Eigenvalue rigidity (GUE = 0.5996, Poisson = 0.3863) |
 | F | Frobenius Stability | Distance of transition matrix from identity |
 | RTI | Reasoning Tension Index | Coefficient of variation of output distribution |
 
@@ -57,8 +57,8 @@ The Gaussian Unitary Ensemble predicts that eigenvalue spacings in complex
 Hermitian random matrices exhibit level repulsion. The r-ratio statistic:
 ```
 rₙ = min(δₙ, δₙ₊₁) / max(δₙ, δₙ₊₁)
-⟨r⟩_GUE ≈ 0.603
-⟨r⟩_Poisson ≈ 0.386
+⟨r⟩_GUE ≈ 0.5996
+⟨r⟩_Poisson ≈ 0.3863
 ```
 
 ### 2. Latent Space as Riemannian Manifold [PROVEN]
@@ -81,9 +81,11 @@ The Berry-Keating k=1 invariant from Project Riemann corresponds to
 the dynamic sigma in the heat kernel — maintaining Cheeger constant > 0 
 and keeping the manifold connected.
 
-### 5. The ⟨r⟩ = 0.578 Attractor [CONJECTURAL]
-When transformer hidden states exhibit GUE-like spacing, the context 
-manifold is geometrically rigid. Poisson drift (⟨r⟩ → 0.386) corresponds 
+### 5. The GUE ⟨r⟩ ≈ 0.5996 Attractor [CONJECTURAL]
+When transformer hidden states exhibit GUE-like spacing, the context
+manifold is geometrically rigid. The true GUE mean is 0.5996 (Wigner surmise);
+the operational fine-tuning target of 0.578 is a chosen point below this mean
+and is not the GUE constant. Poisson drift (⟨r⟩ → 0.3863) corresponds
 to context decoherence — the "hallucination mode."
 
 ---
@@ -114,7 +116,7 @@ determinism, (3) framework universality. Distinguishing these is Phase 2.
 See `tests/test_geometric_rigidity.py`
 
 **Target:** Layer 11 post-MLP hidden states, S ≥ 512 tokens
-**Pass condition:** ⟨r⟩ = 0.578 ± 0.05, λ₂ > 0.1
+**Pass condition:** ⟨r⟩ ≈ 0.5996 ± 0.05, λ₂ > 0.1
 **If avg_r → 0.386:** Manifold in Poisson drift, hallucination risk elevated
 
 ---

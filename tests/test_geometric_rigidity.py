@@ -3,7 +3,7 @@ Geometric Brain Spectral Verification Protocol
 Holeyfield-AI Collaboration — Aletheia Sovereign Systems, 2026
 
 Tests whether transformer hidden states exhibit GUE spectral rigidity.
-Pass condition: avg_r ≈ 0.578 ± 0.05, λ₂ > 0.1
+Pass condition: avg_r ≈ 0.5996 ± 0.05, λ₂ > 0.1
 
 Status: [COMPUTATIONAL] — requires live hidden states from universal_hook.py
 """
@@ -65,8 +65,8 @@ def test_spectral_rigidity_gue_attractor():
     """
     Verifies hidden state manifold exhibits GUE spectral rigidity.
 
-    GUE target:     ⟨r⟩ ≈ 0.578 (GOE→GUE crossover)
-    Poisson regime: ⟨r⟩ ≈ 0.386 (hallucination risk)
+    GUE mean:       ⟨r⟩ ≈ 0.5996 (Wigner surmise)
+    Poisson regime: ⟨r⟩ ≈ 0.3863 (hallucination risk)
     Tolerance:      ±0.05 (finite-size N=512 effects)
 
     Requires: wrapper.get_buffer(layer=11) populated via
@@ -94,24 +94,24 @@ def test_spectral_rigidity_gue_attractor():
     print(f"GEOMETRIC BRAIN AUDIT — LAYER 11")
     print(f"{'='*50}")
     print(f"⟨r⟩ measured:    {avg_r:.4f}")
-    print(f"⟨r⟩ GUE target:  0.5996")
-    print(f"⟨r⟩ crossover:   0.578")
-    print(f"⟨r⟩ Poisson ref: 0.386")
+    print(f"⟨r⟩ GUE mean:    0.5996")
+    print(f"⟨r⟩ op. target:  0.578  (operational; not the GUE constant)")
+    print(f"⟨r⟩ Poisson ref: 0.3863")
     print(f"λ₂ connectivity: {lambda_2:.4f}")
     print(f"Auto sigma:      {sigma:.4f}")
     print(f"{'='*50}")
 
     if avg_r < 0.45:
         print("⚠️  POISSON DRIFT — context decoherence risk")
-    elif abs(avg_r - 0.578) <= 0.05:
+    elif abs(avg_r - 0.5996) <= 0.05:
         print("✅ GUE ATTRACTOR — manifold rigid")
     else:
         print("⬜ GOE→GUE CROSSOVER — intermediate regime")
 
     # Assertions
-    assert avg_r == pytest.approx(0.578, abs=0.05), (
-        f"Manifold NOT rigid. ⟨r⟩={avg_r:.4f}, expected 0.578±0.05. "
-        f"Drift toward Poisson={0.386} indicates context decoherence."
+    assert avg_r == pytest.approx(0.5996, abs=0.05), (
+        f"Manifold NOT rigid. ⟨r⟩={avg_r:.4f}, expected 0.5996±0.05 (GUE mean). "
+        f"Drift toward Poisson={0.3863} indicates context decoherence."
     )
 
     assert lambda_2 > 0.1, (
@@ -135,7 +135,7 @@ def test_poisson_detection():
     print(f"\nPoisson control ⟨r⟩: {avg_r:.4f} (expected ≈ 0.386)")
 
     # Random states should NOT pass GUE test
-    assert abs(avg_r - 0.578) > 0.05, (
+    assert abs(avg_r - 0.5996) > 0.05, (
         f"Random states passed GUE test — test may be miscalibrated. "
         f"⟨r⟩={avg_r:.4f}"
     )
