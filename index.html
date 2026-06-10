@@ -800,7 +800,8 @@
 <section id="audit-hub">
   <div class="container">
     <h2 class="section-title">Self-Serve Audit Hub</h2>
-    <p class="section-intro">Educational research-station workflow for spectral audits and coherence analysis.</p>
+    <p class="section-intro">Educational research-station workflow for spectral structure measurement and model comparison.</p>
+    <p class="muted-note" style="margin-bottom:20px;">Measures spectral structure, not output correctness; does not detect hallucination or judge content quality.</p>
     
     <!-- HuggingFace model connection guide -->
     <div class="card hf-guide">
@@ -811,10 +812,10 @@
           <strong>Load your model in the starter notebook</strong> — Click <em>Launch Gemma 4 Starter Notebook</em> below. The notebook imports any HuggingFace model via <code>AutoModelForCausalLM.from_pretrained("your/model-id")</code>, attaches activation hooks, and computes hidden-state eigenvalues automatically.
         </li>
         <li>
-          <strong>Run the coherence estimator</strong> — <code>estimate_coherence_score(model, tokenizer, prompt)</code> returns the k=1 Berry-Keating invariant and a GUE r-statistic proxy. Paste those numbers into the result panel below for tier classification.
+          <strong>Run the spectral measurement</strong> — The notebook computes the GUE r-statistic from eigenvalue spacings of the activation Laplacian. Use the external proxy below (opt-in) to submit text for a remote spectral estimate.
         </li>
         <li>
-          <strong>Interpret your numbers</strong> — Use the Foundational Methods cards below to decode what your k-value and r-statistic mean. For production-grade hidden-state and eigenvalue analysis, follow the links in the Deeper Analysis section.
+          <strong>Interpret your numbers</strong> — Use the Foundational Methods card below to interpret your r-statistic. For production-grade hidden-state and eigenvalue analysis, follow the links in the Deeper Analysis section.
         </li>
       </ol>
       <a href="notebooks/gemma4_starter.ipynb" id="notebook-btn-guide" class="mini-btn notebook-launch-btn" aria-label="Launch Gemma 4 starter notebook">Launch Gemma 4 Starter Notebook</a>
@@ -838,46 +839,33 @@
           </div>
           <p class="privacy-note" id="external-privacy-note">Outbound surfaces on this page: Google Fonts and the external proxy endpoint. Local spectral analysis remains available without outbound transmission.</p>
         </div>
-        <label for="audit-input" class="label">Model Response for Audit</label>
-        <p id="audit-help" class="muted-note section-mini-intro">Checks for research markers: Hamiltonian, k=1, Spectral, Manifold, Coherence, GUE, and Berry-Keating.</p>
-        <textarea id="audit-input" aria-label="Model response input for audit" aria-describedby="audit-help" placeholder="Paste response text containing spectral or coherence content for screening."></textarea>
+        <label for="audit-input" class="label">Text Input for External Spectral Proxy</label>
+        <textarea id="audit-input" aria-label="Text input for external spectral proxy" placeholder="Paste text to submit for remote r-ratio / regime spectral measurement (opt-in required)."></textarea>
         <div class="helper-row">
           <button class="mini-btn helper-btn" id="sample-btn" type="button">Try Example Input</button>
         </div>
-        <button class="mini-btn" id="audit-btn" type="button">Run Spectral Analysis</button>
-        <button class="mini-btn proxy-btn" id="proxy-btn" type="button" aria-describedby="external-privacy-note" disabled>Run External Text Proxy</button>
+        <button class="mini-btn proxy-btn" id="proxy-btn" type="button" aria-describedby="external-privacy-note" disabled>Run External Spectral Proxy</button>
         <a href="notebooks/gemma4_starter.ipynb" id="notebook-btn" class="mini-btn notebook-launch-btn" aria-label="Launch Gemma 4 starter notebook">Launch Gemma 4 Starter Notebook</a>
         <div id="audit-error" class="error-box" role="alert" aria-live="assertive"></div>
       </div>
       <div class="card">
         <div id="audit-result" class="result-box" role="status" aria-live="polite"></div>
-        <p class="muted-note">Classification uses transparent keyword matching. For production work, use hidden-state and eigenvalue analysis in the research engine.</p>
+        <p class="muted-note">External proxy returns r-ratio and regime from spectral analysis. For production work, use hidden-state and eigenvalue analysis in the research engine.</p>
       </div>
     </div>
 
     <h3 class="section-title section-mini-title">Foundational Methods</h3>
-    <p class="section-intro section-mini-intro">Key reference parameters for spectral rigidity and coherence analysis.</p>
+    <p class="section-intro section-mini-intro">Key reference parameters for spectral rigidity measurement.</p>
     <div class="grid-2">
       <article class="card">
         <span class="label">Spectral Rigidity</span>
-        <h3 class="method-title">GUE Ensemble Target</h3>
-        <p class="metric-value">r ≈ 0.603</p>
-        <p>The GUE (Gaussian Unitary Ensemble) r-statistic measures the average ratio of consecutive eigenvalue gaps in the model's hidden-state weight matrices. Random Matrix Theory predicts r ≈ 0.603 for systems with time-reversal symmetry breaking — the same distribution observed in chaotic quantum systems.</p>
+        <h3 class="method-title">GUE r-statistic</h3>
+        <p class="metric-value">r ≈ 0.5996</p>
+        <p>The GUE (Gaussian Unitary Ensemble) r-statistic measures the average ratio of consecutive eigenvalue gaps in the model's hidden-state weight matrices. The Wigner surmise predicts r ≈ 0.5996 (empirically ~0.602); Poisson-distributed spacings give r ≈ 0.3863. This measures spectral structure only — it does not indicate output quality or coherence.</p>
         <ul class="metric-interp">
-          <li><strong>r near 0.603:</strong> Eigenvalue spacing matches GUE prediction — normal spectral rigidity, no anomalous structure detected.</li>
-          <li><strong>r &lt; 0.53 (Poisson limit):</strong> Eigenvalue repulsion breaks down — possible layer collapse, weight degeneracy, or uncorrelated blocks. Investigate with hidden-state analysis.</li>
+          <li><strong>r near 0.5996:</strong> Eigenvalue spacing matches GUE prediction — normal spectral rigidity for this regime.</li>
+          <li><strong>r near 0.3863 (Poisson):</strong> Eigenvalue repulsion breaks down — possible layer collapse, weight degeneracy, or uncorrelated blocks. Investigate with hidden-state analysis.</li>
           <li><strong>r &gt; 0.65:</strong> Stronger-than-expected eigenvalue repulsion — possible over-regularization, rank deficiency, or unusual training dynamics.</li>
-        </ul>
-      </article>
-      <article class="card">
-        <span class="label">Coherence Invariant</span>
-        <h3 class="method-title">Berry–Keating k=1</h3>
-        <p class="metric-value">k = 1</p>
-        <p>The Berry–Keating k-value characterizes coherence structure in the activation manifold geometry. k=1 corresponds to first-order coherence — the model's latent representations form a smooth, well-conditioned geometry consistent with stable information flow across layers.</p>
-        <ul class="metric-interp">
-          <li><strong>k = 1:</strong> First-order coherence intact. Latent geometry is well-conditioned. Model activations exhibit expected spectral correlations.</li>
-          <li><strong>k = 0:</strong> No detectable coherence structure. Activations are uncorrelated — possible dead layers, catastrophic interference, or meaningless residual stream.</li>
-          <li><strong>k &gt; 1:</strong> Higher-order coherence detected. Can indicate strong geometric structure from fine-tuning, or — at high values — pathological entanglement between representations that should be independent.</li>
         </ul>
       </article>
     </div>
@@ -888,7 +876,7 @@
       <article class="card deeper-card">
         <span class="label">Research Engine</span>
         <h3 class="method-title">Unitarity-lab</h3>
-        <p>Full hidden-state and eigenvalue instrumentation. Attach activation hooks, run reproducible audit notebooks, export audit trails. This is where numbers like your r-statistic and k-value are derived from real hidden states rather than text proxies.</p>
+        <p>Full hidden-state and eigenvalue instrumentation. Attach activation hooks, run reproducible audit notebooks, export audit trails. This is where r-statistics and spectral metrics are derived from real hidden states rather than text proxies.</p>
         <p class="muted-note"><a href="https://github.com/holeyfield33-art/unitarity-lab" target="_blank" rel="noopener noreferrer" class="btn-tertiary">Open research engine →</a></p>
       </article>
       <article class="card deeper-card">
@@ -940,37 +928,9 @@
 </footer>
 
 <script>
-// Transparent keyword-matching classifier
-function classifyAuditInput(input) {
-  const keywords = [
-    'Hamiltonian', 'k=1', 'Spectral', 'Manifold', 'Coherence', 'GUE', 'Berry-Keating'
-  ];
-  
-  const upperInput = input.toUpperCase();
-  const matchedKeywords = [];
-  
-  keywords.forEach(keyword => {
-    if (upperInput.indexOf(keyword.toUpperCase()) !== -1) {
-      matchedKeywords.push(keyword);
-    }
-  });
-  
-  const hasMatches = matchedKeywords.length > 0;
-  const confidence = hasMatches ? Math.min(1.0, matchedKeywords.length / keywords.length) : 0;
-  
-  const label = hasMatches ? 'Strong Coherence (Tier 1)' : 'Weak Evidence (Tier 3)';
-  
-  return {
-    label: label,
-    confidence: confidence,
-    matchedKeywords: matchedKeywords,
-    hasMatches: hasMatches
-  };
-}
-
 const SAMPLE_AUDIT_INPUT = [
-  'The latent manifold shows stable Hamiltonian structure with coherent spectral signatures.',
-  'Observed GUE spacing trend is near the target and Berry-Keating k=1 behavior remains consistent.'
+  'The model produces stable outputs across token positions.',
+  'Observed GUE r-statistic is near 0.5996, consistent with the Wigner surmise.'
 ].join(' ');
 
 const EXTERNAL_PROXY_ENDPOINT = 'https://geometric-brain-mcp.onrender.com/v1/brain/health-check';
@@ -993,69 +953,6 @@ function redactSensitiveText(input) {
     .replace(/\b(sk|api|token|key)[_-]?[a-z0-9]{8,}\b/gi, '[REDACTED_TOKEN]');
 }
 
-function buildAnalysisResultNode(classification) {
-  const badgeColor = classification.hasMatches ? '#00da9a' : '#ffb347';
-  const backgroundColor = classification.hasMatches
-    ? 'rgba(0, 218, 154, 0.15)'
-    : 'rgba(255, 177, 71, 0.15)';
-
-  const root = document.createElement('div');
-
-  const panel = document.createElement('div');
-  panel.style.background = backgroundColor;
-  panel.style.border = '1px solid ' + badgeColor + '30';
-  panel.style.padding = '16px';
-  panel.style.marginBottom = '12px';
-
-  const label = document.createElement('div');
-  label.style.fontFamily = 'var(--mono)';
-  label.style.fontSize = '10px';
-  label.style.color = badgeColor;
-  label.style.letterSpacing = '0.12em';
-  label.style.textTransform = 'uppercase';
-  label.style.marginBottom = '8px';
-  label.textContent = 'Classification Result';
-  panel.appendChild(label);
-
-  const headline = document.createElement('div');
-  headline.style.fontSize = '20px';
-  headline.style.fontWeight = '700';
-  headline.style.color = badgeColor;
-  headline.style.marginBottom = '12px';
-  headline.textContent = classification.label;
-  panel.appendChild(headline);
-
-  const metrics = document.createElement('div');
-  metrics.style.fontFamily = 'var(--mono)';
-  metrics.style.fontSize = '12px';
-  metrics.style.color = 'var(--text-dim)';
-  metrics.style.lineHeight = '1.6';
-
-  const confidenceLine = document.createElement('div');
-  confidenceLine.textContent = 'Confidence: ' + (classification.confidence * 100).toFixed(1) + '%';
-  metrics.appendChild(confidenceLine);
-
-  const detailLine = document.createElement('div');
-  detailLine.style.marginTop = '8px';
-  if (classification.matchedKeywords.length > 0) {
-    detailLine.textContent = 'Keywords: ' + classification.matchedKeywords.join(', ');
-  } else {
-    detailLine.style.color = 'var(--text-muted)';
-    detailLine.textContent = 'No primary keywords detected. Consider expanding the response or consulting hidden-state analysis.';
-  }
-  metrics.appendChild(detailLine);
-  panel.appendChild(metrics);
-
-  const footnote = document.createElement('div');
-  footnote.style.fontSize = '13px';
-  footnote.style.color = 'var(--text-muted)';
-  footnote.style.marginTop = '12px';
-  footnote.textContent = 'This is a lightweight screening pass. Primary evidence comes from hidden-state and eigenvalue analysis in the research engine.';
-
-  root.appendChild(panel);
-  root.appendChild(footnote);
-  return root;
-}
 
 function setButtonLoading(btn, isLoading, loadingLabel, defaultLabel) {
   if (!btn) {
@@ -1104,16 +1001,11 @@ function resolveNotebookUrl() {
 }
 
 function initializeAuditHub() {
-  const auditBtn = document.getElementById('audit-btn');
   const proxyBtn = document.getElementById('proxy-btn');
   const sampleBtn = document.getElementById('sample-btn');
   const notebookBtn = document.getElementById('notebook-btn');
   const optInToggle = document.getElementById('external-opt-in');
   const auditError = document.getElementById('audit-error');
-
-  if (auditBtn) {
-    auditBtn.addEventListener('click', runSpectralAnalysis);
-  }
 
   if (proxyBtn) {
     proxyBtn.addEventListener('click', runHealthCheck);
@@ -1157,44 +1049,7 @@ function initializeAuditHub() {
   }
 }
 
-async function runSpectralAnalysis() {
-  const input = document.getElementById('audit-input').value.trim();
-  const btn = document.getElementById('audit-btn');
-  const result = document.getElementById('audit-result');
-  const error = document.getElementById('audit-error');
-  let completed = false;
-  
-  if (!input) {
-    error.style.display = 'block';
-    error.textContent = 'Paste model response text to run spectral analysis.';
-    result.style.display = 'none';
-    return;
-  }
-  
-  error.style.display = 'none';
-  error.textContent = '';
-  result.style.display = 'none';
-  result.textContent = '';
-  setButtonLoading(btn, true, 'Running Analysis', 'Run Spectral Analysis');
-  
-  try {
-    const classification = classifyAuditInput(input);
-    const safeNode = buildAnalysisResultNode(classification);
-    result.appendChild(safeNode);
-    result.style.display = 'block';
-    completed = true;
-  } catch (e) {
-    error.style.display = 'block';
-    error.textContent = 'Error: ' + e.message;
-  } finally {
-    setButtonLoading(btn, false, 'Running Analysis', 'Run Spectral Analysis');
-    if (completed) {
-      showSuccessState(btn, 'Analysis Complete', 'Run Spectral Analysis');
-    }
-  }
-}
-
-// Legacy text proxy function (preserved for compatibility)
+// External spectral proxy
 async function runHealthCheck() {
   const inputEl = document.getElementById('api-input') || document.getElementById('audit-input');
   const btn = document.getElementById('api-btn') || document.getElementById('proxy-btn');
@@ -1225,7 +1080,7 @@ async function runHealthCheck() {
   error.style.display = 'none';
   result.style.display = 'none';
   result.textContent = '';
-  setButtonLoading(btn, true, 'Running External Proxy', 'Run External Text Proxy');
+  setButtonLoading(btn, true, 'Running External Proxy', 'Run External Spectral Proxy');
 
   try {
     const resp = await fetch(EXTERNAL_PROXY_ENDPOINT, {
@@ -1278,12 +1133,12 @@ async function runHealthCheck() {
     result.appendChild(title);
     result.appendChild(grid);
     result.style.display = 'block';
-    showSuccessState(btn, 'Proxy Complete', 'Run External Text Proxy');
+    showSuccessState(btn, 'Proxy Complete', 'Run External Spectral Proxy');
   } catch (e) {
     error.style.display = 'block';
     error.textContent = 'Error: ' + e.message;
   } finally {
-    setButtonLoading(btn, false, 'Running External Proxy', 'Run External Text Proxy');
+    setButtonLoading(btn, false, 'Running External Proxy', 'Run External Spectral Proxy');
   }
 }
 
