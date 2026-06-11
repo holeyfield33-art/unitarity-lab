@@ -147,13 +147,75 @@ class TestZetaMetric:
         assert -1.0 <= c <= 1.0
 
     def test_permutation_test_reproducibility(self):
+        import warnings
         from unitarity_labs.core.metrics import permutation_test_zeta
         a = torch.randn(1, 16, 64)
         b = a + 0.01 * torch.randn(1, 16, 64)
-        z1, p1 = permutation_test_zeta(a, b, n_perm=50, seed=123)
-        z2, p2 = permutation_test_zeta(a, b, n_perm=50, seed=123)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            z1, p1 = permutation_test_zeta(a, b, n_perm=50, seed=123)
+            z2, p2 = permutation_test_zeta(a, b, n_perm=50, seed=123)
         assert z1 == z2
         assert p1 == p2
+
+    def test_permutation_test_emits_deprecation_warning(self):
+        import warnings
+        from unitarity_labs.core.metrics import permutation_test_zeta
+        a = torch.randn(1, 4, 8)
+        b = torch.randn(1, 4, 8)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            permutation_test_zeta(a, b, n_perm=5)
+        assert any(issubclass(w.category, DeprecationWarning) for w in caught)
+
+
+# ======================================================================
+# Phase 3b — cross_sample_null_zeta
+# ======================================================================
+
+class TestCrossSampleNullZeta:
+    """Tests for cross_sample_null_zeta (honest significance test)."""
+
+    def test_positive_control_gap_and_zscore(self):
+        """Correlated sink vs random controls: gap > 0, z_score > 2."""
+        from unitarity_labs.core.metrics import cross_sample_null_zeta
+        torch.manual_seed(0)
+        source = torch.ones(4, 64)
+        sink = source + 0.001 * torch.randn(4, 64)
+        control_sinks = [torch.randn(4, 64) for _ in range(20)]
+        result = cross_sample_null_zeta(source, sink, control_sinks)
+        assert result["gap"] > 0, f"Expected gap > 0, got {result['gap']}"
+        assert result["z_score"] > 2, f"Expected z_score > 2, got {result['z_score']}"
+
+    def test_negative_control_gap_near_zero(self):
+        """Independent sink and controls: gap should be near 0."""
+        from unitarity_labs.core.metrics import cross_sample_null_zeta
+        torch.manual_seed(99)
+        source = torch.randn(1, 1024)
+        sink = torch.randn(1, 1024)
+        control_sinks = [torch.randn(1, 1024) for _ in range(20)]
+        result = cross_sample_null_zeta(source, sink, control_sinks)
+        assert abs(result["gap"]) < 0.15, f"Expected |gap| < 0.15, got {result['gap']}"
+
+    def test_empty_control_sinks_raises(self):
+        """Empty control_sinks must raise ValueError."""
+        from unitarity_labs.core.metrics import cross_sample_null_zeta
+        source = torch.randn(4, 8)
+        sink = torch.randn(4, 8)
+        with pytest.raises(ValueError):
+            cross_sample_null_zeta(source, sink, [])
+
+    def test_return_keys_and_n_controls(self):
+        """Result dict has all required keys with correct n_controls."""
+        from unitarity_labs.core.metrics import cross_sample_null_zeta
+        torch.manual_seed(7)
+        source = torch.randn(2, 16)
+        sink = torch.randn(2, 16)
+        controls = [torch.randn(2, 16) for _ in range(5)]
+        result = cross_sample_null_zeta(source, sink, controls)
+        for key in ("matched", "null_mean", "null_std", "gap", "z_score", "n_controls"):
+            assert key in result, f"Missing key: {key}"
+        assert result["n_controls"] == 5
 
 
 # ======================================================================

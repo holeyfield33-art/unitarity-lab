@@ -22,7 +22,11 @@ from .unitary_regulator import (
     wormhole_gap_alert, WORMHOLE_GAP_THRESHOLD,
     adaptive_measurement_freq, poisson_sampling_guard, enforce_projection_norm,
 )
-from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
+try:
+    from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
+except ImportError:
+    DualNodeEntanglementBridge = None
+    register_dual_node_hook = None
 from .orchestrator import Orchestrator
 from .bocpd import PredictiveAnomalyDetector
 

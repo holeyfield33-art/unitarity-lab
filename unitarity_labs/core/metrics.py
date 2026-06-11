@@ -9,7 +9,8 @@ of quantum non-locality, topological coherence, or Bell inequality violation.
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+import warnings
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -100,6 +101,12 @@ def permutation_test_zeta(
 ) -> Tuple[float, float]:
     """Permutation test for Manifold Coherence ζ significance.
 
+    .. deprecated::
+        This function produces a near-zero-variance null on real activations:
+        permuting a flattened high-dimensional vector barely changes cosine
+        similarity, yielding uninformative p~0. Use
+        :func:`cross_sample_null_zeta` instead.
+
     Computes the observed ζ, then generates n_perm null-distribution
     samples by randomly permuting the flattened sink tensor. Returns
     both the observed ζ and the two-sided p-value.
@@ -121,6 +128,14 @@ def permutation_test_zeta(
         zeta: the observed Manifold Coherence ζ.
         p_value: fraction of permuted samples with |ζ_perm| >= |ζ_obs|.
     """
+    warnings.warn(
+        "permutation_test_zeta produces a near-zero-variance null on real "
+        "activations (permuting a flattened high-dim vector barely changes "
+        "cosine similarity), yielding uninformative p~0. Use "
+        "cross_sample_null_zeta instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     s_flat = source.detach().float().flatten()
     k_flat = sink.detach().float().flatten()
 
@@ -152,3 +167,66 @@ def permutation_test_zeta(
 
     p_value = count_extreme / n_perm
     return zeta_obs, p_value
+
+
+def cross_sample_null_zeta(
+    source: torch.Tensor,
+    sink: torch.Tensor,
+    control_sinks: List[torch.Tensor],
+) -> dict:
+    """Honest significance test for Manifold Coherence zeta.
+
+    Compares ζ(source, sink) for the SAME input against the distribution
+    of ζ(source, control_sink) for UNRELATED inputs' layer-k activations.
+    A positive gap indicates real input-specific cross-layer structure.
+
+    Example usage::
+
+        # Capture layer-k activations for a few unrelated inputs
+        control_sinks = []
+        for tokens in unrelated_token_batches:
+            with torch.no_grad():
+                out = model(tokens, output_hidden_states=True)
+            control_sinks.append(out.hidden_states[layer_k].detach())
+        result = cross_sample_null_zeta(source_acts, sink_acts, control_sinks)
+        print(result["gap"], result["z_score"])
+
+    Parameters
+    ----------
+    source : Tensor
+        Layer-s activations for the input of interest (any shape).
+    sink : Tensor
+        Layer-k activations for the same input (any shape).
+    control_sinks : list of Tensor
+        Layer-k activations from N unrelated inputs.  Must be non-empty.
+
+    Returns
+    -------
+    dict with keys:
+        matched      : float  -- ζ for the same-input pair
+        null_mean    : float  -- mean ζ against unrelated control sinks
+        null_std     : float  -- std of null scores (0.0 when n_controls == 1)
+        gap          : float  -- matched - null_mean (the real signal)
+        z_score      : float  -- gap / null_std; float('inf') when null_std == 0
+        n_controls   : int
+    """
+    if not control_sinks:
+        raise ValueError("control_sinks must be non-empty")
+
+    matched = manifold_coherence_zeta(source, sink)
+    null_scores = [manifold_coherence_zeta(source, cs) for cs in control_sinks]
+
+    null_tensor = torch.tensor(null_scores, dtype=torch.float32)
+    null_mean = null_tensor.mean().item()
+    null_std = null_tensor.std().item() if len(null_scores) > 1 else 0.0
+    gap = matched - null_mean
+    z_score = (gap / null_std) if null_std > 0.0 else float("inf")
+
+    return {
+        "matched": matched,
+        "null_mean": null_mean,
+        "null_std": null_std,
+        "gap": gap,
+        "z_score": z_score,
+        "n_controls": len(null_scores),
+    }
