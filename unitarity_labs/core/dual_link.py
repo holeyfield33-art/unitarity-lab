@@ -22,7 +22,6 @@ from typing import Optional
 
 import torch
 import torch.nn.functional as F
-import zmq
 
 
 class DualNodeEntanglementBridge:
@@ -40,6 +39,14 @@ class DualNodeEntanglementBridge:
     """
 
     def __init__(self, node_id: str = "A", krylov_dim: int = 128, zmq_port: int = 5555):
+        try:
+            import zmq
+        except ImportError as e:
+            raise ImportError(
+                "The distributed/dual-node features require pyzmq. "
+                "Install with: pip install 'unitarity-lab[dist]'"
+            ) from e
+
         self.node_id = node_id
         self.krylov_dim = krylov_dim
 
@@ -98,6 +105,7 @@ class DualNodeEntanglementBridge:
 
     def recv_partner_basis(self, device: str = "cpu") -> Optional[torch.Tensor]:
         """Non-blocking partner receive with 10ms latency guard."""
+        import zmq  # cached after __init__; repeated here for zmq.DONTWAIT / zmq.Again
         try:
             msg = self.sub.recv_pyobj(flags=zmq.DONTWAIT)
             latency = time.monotonic() - msg['timestamp']
