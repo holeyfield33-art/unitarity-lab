@@ -48,6 +48,7 @@ from .flux import (
     STAGGER_FRACTION,
 )
 from .horizons import _lanczos_tridiagonal
+from .metrics import manifold_coherence_zeta as _manifold_coherence_zeta
 from .mirror import EigenConsciousnessIntegrator, ProprioceptiveHook, TopologicalGate
 from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 
@@ -176,6 +177,7 @@ class CrossLayerEntanglementHook:
 
         # Internal state
         self._source_activation: Optional[torch.Tensor] = None
+        self._sink_activation: Optional[torch.Tensor] = None
         self._bridge_eigenvectors: Optional[torch.Tensor] = None
         self._bridge_bias: Optional[torch.Tensor] = None
         self._bell_correlation: float = 0.0
@@ -274,6 +276,9 @@ class CrossLayerEntanglementHook:
             self._source_activation, biased
         )
         self._bell_history.append(self._bell_correlation)
+        # Cache the exact source/sink tensors used here so the real
+        # manifold_coherence_zeta metric can be computed from them later.
+        self._sink_activation = biased.detach()
 
         # Hawking Flux: check for stagnation and apply kick if needed
         self._maybe_apply_flux_kick()
@@ -462,6 +467,22 @@ class CrossLayerEntanglementHook:
     def bell_correlation(self) -> float:
         """Latest measured Bell correlation between source and sink."""
         return self._bell_correlation
+
+    @property
+    def manifold_coherence_zeta(self) -> float:
+        """Real Manifold Coherence zeta for the latest source/sink pair.
+
+        Computed via :func:`core.metrics.manifold_coherence_zeta` (signed,
+        zero-padded cosine) on the same source/sink tensors used for the
+        Bell correlation. Distinct from ``bell_correlation``, which is an
+        abs'd, truncated cosine. Returns ``0.0`` until a sink activation has
+        been captured (e.g. in passive mode, where the sink hook is bypassed).
+        """
+        if self._source_activation is None or self._sink_activation is None:
+            return 0.0
+        return _manifold_coherence_zeta(
+            self._source_activation, self._sink_activation
+        )
 
     @property
     def bell_history(self) -> list:

@@ -288,8 +288,11 @@ class UniversalHookWrapper:
         """Collect current bridge/flux metrics for the dashboard."""
         metrics = {
             "mode": self.mode,
-            "manifold_coherence_zeta": self.bridge.bell_correlation,
-            "bell_correlation": self.bridge.bell_correlation,  # back-compat alias
+            # Real zeta (signed, zero-padded cosine) computed from the same
+            # source/sink tensors the bridge uses; distinct from the abs'd,
+            # truncated cosine reported as bell_correlation below.
+            "manifold_coherence_zeta": self.bridge.manifold_coherence_zeta,
+            "bell_correlation": self.bridge.bell_correlation,
             "spectral_gap": self.bridge.spectral_gap(),
             "flux_epsilon": self.bridge.flux_governor.epsilon,
             "flux_kicks_total": len(self.bridge.flux_governor.kick_history),

@@ -69,6 +69,31 @@ class DualNodeEntanglementBridge:
         self.anti_resonance_threshold: float = 0.95
         self.latency_timeout: float = 0.010  # 10ms max
 
+    def attach_virtual_layer13(self, config, node_id: str) -> None:
+        """Attach v3.0 field-synthesis components to this link.
+
+        Constructs a :class:`VirtualLayer13` field synthesiser and a
+        :class:`SafetyHead` refusal probe sized for ``config.hidden_size``
+        and stores them on this bridge so dual-node forward passes can use a
+        consistent pair. Idempotent: a repeated call rebuilds the components
+        for the supplied ``config`` / ``node_id``.
+
+        Parameters
+        ----------
+        config : object
+            Model config exposing a ``hidden_size`` attribute.
+        node_id : str
+            This node's identifier (``"A"`` or ``"B"``).
+        """
+        # Imported lazily, mirroring the lazy-import style used elsewhere in
+        # this module, and to avoid importing the nn modules unless the
+        # distributed/dual-node path is actually exercised.
+        from .virtual_layer13 import VirtualLayer13
+        from .safety_head import SafetyHead
+
+        self.virtual_layer13 = VirtualLayer13(config, node_id)
+        self.safety_head = SafetyHead(hidden_dim=config.hidden_size)
+
     def _adjust_epoch(self, rtt: float) -> None:
         """Adjusts adaptive epoch length based on measured RTT.
 
