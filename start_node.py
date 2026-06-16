@@ -240,6 +240,26 @@ def main() -> None:
           f"({wrapper.num_layers} total), "
           f"{int(wrapper.head_mask.sum())}/{wrapper.num_heads} heads active")
 
+    # --- Dual-node startup barrier ---
+    # ZeroMQ PUB/SUB drops everything published before the partner's
+    # subscriber has connected, so without this barrier a node can receive 0
+    # partner messages for the whole run. Block here until the partner is
+    # reachable; degrade to solo mode (no crash) if it never shows up.
+    if args.dual and getattr(wrapper.bridge, "dual_link", None) is not None:
+        from unitarity_labs.core.handshake import HandshakeTimeout, IncompatibleNode
+        print(f"[Node] Dual mode: waiting for partner handshake "
+              f"(node {args.node_id})...")
+        try:
+            info = wrapper.bridge.dual_link.synchronize(timeout_ms=30000)
+            print(f"[Node] Partner synced: remote_id={info.get('remote_id')}, "
+                  f"epoch_len={info.get('epoch_len')}")
+        except HandshakeTimeout:
+            print("[Node] WARN: no partner handshake before timeout -> "
+                  "continuing in solo (degraded) mode.")
+        except IncompatibleNode as e:
+            print(f"[Node] WARN: partner incompatible ({e}) -> "
+                  "continuing in solo (degraded) mode.")
+
     # --- Generate ---
     print(f"\n[Node] Generating with prompt: {args.prompt!r}\n")
     inputs = tokenizer(args.prompt, return_tensors="pt")
