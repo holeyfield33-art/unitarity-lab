@@ -69,6 +69,11 @@ class DualNodeEntanglementBridge:
         self.anti_resonance_threshold: float = 0.95
         self.latency_timeout: float = 0.010  # 10ms max
 
+        # Honest cross-sync exchange counters (measurement only)
+        self._partner_recv_count: int = 0
+        self._partner_miss_count: int = 0
+        self._phi_history: list = []
+
     def attach_virtual_layer13(self, config, node_id: str) -> None:
         """Attach v3.0 field-synthesis components to this link.
 
@@ -135,10 +140,13 @@ class DualNodeEntanglementBridge:
             msg = self.sub.recv_pyobj(flags=zmq.DONTWAIT)
             latency = time.monotonic() - msg['timestamp']
             if latency > self.latency_timeout:
+                self._partner_miss_count += 1  # Desync guard miss (measurement only)
                 return None  # Desync guard
             basis = torch.tensor(msg['basis'], device=device)
+            self._partner_recv_count += 1  # Real partner receive (measurement only)
             return basis
         except zmq.Again:
+            self._partner_miss_count += 1  # No message available (measurement only)
             return None
 
     def compute_cross_sync(
@@ -171,11 +179,26 @@ class DualNodeEntanglementBridge:
         if phi_AB > self.anti_resonance_threshold:
             self.resonance_count += 1
             if self.resonance_count > 3:
+                self._phi_history.append(phi_AB - 0.2)  # measurement only
                 return phi_AB - 0.2  # Force anti-phase
         else:
             self.resonance_count = 0
 
+        self._phi_history.append(phi_AB)  # measurement only
         return phi_AB
+
+    @property
+    def sync_stats(self) -> dict:
+        """Honest dual-node exchange stats: did partner messages actually arrive?"""
+        import statistics as _st
+        phis = [p for p in self._phi_history if p != 0.0]
+        return {
+            "partner_recv": self._partner_recv_count,
+            "partner_miss": self._partner_miss_count,
+            "phi_samples": len(self._phi_history),
+            "phi_nonzero": len(phis),
+            "phi_mean": round(_st.mean(phis), 4) if phis else 0.0,
+        }
 
     def unitary_rotation_inject(
         self,
