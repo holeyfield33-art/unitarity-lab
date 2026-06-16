@@ -87,11 +87,25 @@ def perform_handshake(
     HandshakeTimeout
         If the remote node doesn't respond in time.
     """
+    import time
     import zmq
 
     supported = list(PROJECTOR_REGISTRY.keys())
 
-    # --- Step 1: Send our hello ---
+    poller = zmq.Poller()
+    poller.register(sub_socket, zmq.POLLIN)
+
+    # Single-stage, slow-joiner robust exchange.
+    #
+    # Multi-stage PUB/SUB handshakes deadlock: once a node advances past the
+    # hello stage it stops re-announcing, so a partner that has not yet
+    # received that hello (its first send was dropped before the subscriber
+    # connected) starves forever. We instead fold everything -- including this
+    # node's nonce -- into ONE hello and re-publish it on a short interval until
+    # the partner's hello arrives, then keep re-announcing for a brief grace
+    # period so the partner is guaranteed to receive at least one of ours
+    # before we exit. Both sides therefore converge within one grace window.
+    my_nonce = os.urandom(32)
     hello = {
         "type": "HANDSHAKE",
         "node_id": local_node_id,
@@ -99,31 +113,51 @@ def perform_handshake(
         "epoch_len": local_epoch_len,
         "supported_projectors": [(s.value, t.value) for s, t in supported],
         "capability_proxy": capability_proxy,
+        "nonce": my_nonce.hex(),
         # v2.3: Initial TPS estimate and clock offset for Chronos Lock
         "tps_estimate": 10.0,
         "clock_offset": 0.0,
     }
+
+    deadline = time.monotonic() + timeout_ms / 1000.0
+    resend_interval = 0.1   # re-announce every 100ms
+    grace = 0.5             # keep announcing 500ms after first contact
+
     pub_socket.send_pyobj(hello)
+    last_send = time.monotonic()
+    remote_hello: Optional[Dict[str, Any]] = None
+    first_contact = 0.0
+    while True:
+        now = time.monotonic()
+        if remote_hello is None and now >= deadline:
+            raise HandshakeTimeout(
+                f"No handshake response within {timeout_ms}ms"
+            )
+        if remote_hello is not None and (now - first_contact) >= grace:
+            break
+        if now - last_send >= resend_interval:
+            pub_socket.send_pyobj(hello)  # periodic resend vs slow-joiner
+            last_send = now
+        events = dict(poller.poll(int(resend_interval * 1000)))
+        if sub_socket in events:
+            m = sub_socket.recv_pyobj()
+            if (
+                isinstance(m, dict)
+                and m.get("type") == "HANDSHAKE"
+                and m.get("nonce")
+                and remote_hello is None
+            ):
+                remote_hello = m
+                first_contact = time.monotonic()
 
-    # --- Step 2: Receive remote hello ---
-    poller = zmq.Poller()
-    poller.register(sub_socket, zmq.POLLIN)
-    events = dict(poller.poll(timeout_ms))
-
-    if sub_socket not in events:
-        raise HandshakeTimeout(
-            f"No handshake response within {timeout_ms}ms"
-        )
-    remote_hello = sub_socket.recv_pyobj()
-
-    # --- Step 3: Validate precision ---
+    # --- Validate precision ---
     remote_prec_str = remote_hello.get("precision")
     if remote_prec_str not in PRECISION_CLASSES:
         raise IncompatibleNode(f"Unknown precision: {remote_prec_str}")
 
     remote_precision = PrecisionClass(remote_prec_str)
 
-    # --- Step 4: Check projector availability (both directions) ---
+    # --- Check projector availability (both directions) ---
     if not has_projector(local_precision, remote_precision):
         raise IncompatibleNode(
             f"No projector for {local_precision.value} -> {remote_precision.value}"
@@ -133,19 +167,12 @@ def perform_handshake(
             f"No projector for {remote_precision.value} -> {local_precision.value}"
         )
 
-    # --- Step 5: Agree on epoch length (conservative max) ---
+    # --- Agree on epoch length (conservative max) ---
     remote_epoch = remote_hello.get("epoch_len", 16)
     agreed_epoch = max(local_epoch_len, remote_epoch)
 
-    # --- Step 6: Exchange nonces ---
-    nonce = os.urandom(32)
-    pub_socket.send_pyobj({"type": "NONCE", "nonce": nonce.hex()})
-
-    events = dict(poller.poll(timeout_ms))
-    if sub_socket not in events:
-        raise HandshakeTimeout("No nonce response from remote node")
-    nonce_msg = sub_socket.recv_pyobj()
-    remote_nonce_hex = nonce_msg.get("nonce", "")
+    nonce = my_nonce
+    remote_nonce_hex = remote_hello.get("nonce", "")
 
     return {
         "remote_id": remote_hello.get("node_id"),

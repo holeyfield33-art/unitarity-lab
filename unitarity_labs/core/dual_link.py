@@ -55,6 +55,14 @@ class DualNodeEntanglementBridge:
         self.pub = self.context.socket(zmq.PUB)
         self.sub = self.context.socket(zmq.SUB)
 
+        # Socket hygiene: bound queues + no lingering on close so a slow or
+        # dead partner cannot back-pressure us or stall shutdown. Set before
+        # bind/connect so the options take effect on the connection.
+        for _sock in (self.pub, self.sub):
+            _sock.setsockopt(zmq.LINGER, 0)
+        self.pub.setsockopt(zmq.SNDHWM, 1000)
+        self.sub.setsockopt(zmq.RCVHWM, 1000)
+
         if node_id == "A":
             self.pub.bind(f"tcp://*:{zmq_port}")
             self.sub.connect(f"tcp://localhost:{zmq_port + 1}")
@@ -67,7 +75,22 @@ class DualNodeEntanglementBridge:
         # Adversarial buffers
         self.resonance_count: int = 0
         self.anti_resonance_threshold: float = 0.95
-        self.latency_timeout: float = 0.010  # 10ms max
+
+        # Receive reliability knobs (see recv_partner_basis).
+        #   latency_timeout : staleness ceiling for the FRESHEST drained
+        #     message. Relaxed from the original 10ms -- under real per-token
+        #     generation, GIL contention and queue build-up routinely push
+        #     message age past 10ms, so a 10ms guard discarded nearly every
+        #     message. 250ms still rejects genuinely ancient/desynced data
+        #     while letting normal traffic through.
+        #   poll_timeout_ms : how long recv waits for a message to arrive
+        #     instead of returning immediately (mitigates per-call timing
+        #     misses). Small so it does not noticeably stall generation.
+        #   _recv_drain_cap : max messages drained per recv (keep-latest);
+        #     bounds the drain loop so a saturated queue cannot spin.
+        self.latency_timeout: float = 0.250
+        self.poll_timeout_ms: int = 5
+        self._recv_drain_cap: int = 64
 
         # Honest cross-sync exchange counters (measurement only)
         self._partner_recv_count: int = 0
@@ -134,20 +157,96 @@ class DualNodeEntanglementBridge:
         self.pub.send_pyobj(msg)
 
     def recv_partner_basis(self, device: str = "cpu") -> Optional[torch.Tensor]:
-        """Non-blocking partner receive with 10ms latency guard."""
+        """Partner receive: poll-wait, drain to the freshest queued basis.
+
+        Reliability rework. The old single non-blocking ``recv`` + 10ms guard
+        dropped almost every message in production: it returned instantly when
+        a message had not yet landed, and once the queue backed up it rejected
+        the stale head-of-queue without ever reaching the fresh tail.
+
+        This version:
+          1. waits up to ``poll_timeout_ms`` for traffic (instead of giving up
+             immediately),
+          2. drains all currently-queued messages (bounded by
+             ``_recv_drain_cap``) and keeps the freshest by timestamp -- the
+             "latest partner basis" is what the rotation actually wants, and
+          3. applies the (relaxed) ``latency_timeout`` staleness ceiling only
+             to that freshest message, so genuinely ancient/desynced data is
+             still rejected.
+
+        Counter semantics are unchanged: one ``partner_recv`` per successful
+        call, one ``partner_miss`` per empty/stale call.
+        """
         import zmq  # cached after __init__; repeated here for zmq.DONTWAIT / zmq.Again
-        try:
-            msg = self.sub.recv_pyobj(flags=zmq.DONTWAIT)
-            latency = time.monotonic() - msg['timestamp']
-            if latency > self.latency_timeout:
-                self._partner_miss_count += 1  # Desync guard miss (measurement only)
-                return None  # Desync guard
-            basis = torch.tensor(msg['basis'], device=device)
-            self._partner_recv_count += 1  # Real partner receive (measurement only)
-            return basis
-        except zmq.Again:
+
+        poller = zmq.Poller()
+        poller.register(self.sub, zmq.POLLIN)
+
+        latest: Optional[dict] = None
+        drained = 0
+        polled_once = False
+        while drained < self._recv_drain_cap:
+            try:
+                msg = self.sub.recv_pyobj(flags=zmq.DONTWAIT)
+            except zmq.Again:
+                if polled_once:
+                    break
+                # Nothing queued yet -- wait once for a message to arrive.
+                events = dict(poller.poll(self.poll_timeout_ms))
+                polled_once = True
+                if self.sub in events:
+                    continue
+                break
+            drained += 1
+            if latest is None or msg.get('timestamp', 0.0) >= latest.get('timestamp', 0.0):
+                latest = msg
+
+        if latest is None:
             self._partner_miss_count += 1  # No message available (measurement only)
             return None
+
+        latency = time.monotonic() - latest['timestamp']
+        if latency > self.latency_timeout:
+            self._partner_miss_count += 1  # Stale / desync guard miss (measurement only)
+            return None
+        basis = torch.tensor(latest['basis'], device=device)
+        self._partner_recv_count += 1  # Real partner receive (measurement only)
+        return basis
+
+    def synchronize(self, timeout_ms: int = 5000) -> dict:
+        """Slow-joiner barrier: block until the partner is reachable.
+
+        ZeroMQ PUB/SUB silently drops everything published before the
+        subscriber has finished connecting. Call this ONCE after the sockets
+        are bound/connected and BEFORE any ``send_krylov_basis`` traffic so a
+        hello round-trip has completed and subsequent data is actually
+        delivered (this is the fix for a partner that otherwise receives 0
+        messages for the whole run).
+
+        Wraps :func:`perform_handshake` (precision/projector negotiation +
+        nonce exchange, hardened against slow-joiner). The negotiated epoch
+        length is applied to ``self.epoch_len``; the full result is cached on
+        ``self._handshake`` and returned.
+
+        Raises ``HandshakeTimeout`` / ``IncompatibleNode`` for the caller to
+        handle (e.g. warn and continue in degraded solo mode).
+        """
+        from .handshake import perform_handshake
+        from .precision_projector import PrecisionClass
+
+        precision = getattr(self, "precision", PrecisionClass.FP32)
+        epoch_len = getattr(self, "epoch_len", 16)
+        result = perform_handshake(
+            self.pub,
+            self.sub,
+            local_node_id=self.node_id,
+            local_precision=precision,
+            local_epoch_len=epoch_len,
+            timeout_ms=timeout_ms,
+        )
+        self.epoch_len = result.get("epoch_len", epoch_len)
+        self._handshake = result
+        return result
 
     def compute_cross_sync(
         self, my_basis: torch.Tensor, partner_basis: Optional[torch.Tensor],

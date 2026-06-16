@@ -43,6 +43,10 @@ def main() -> None:
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--dual", action="store_true", help="Enable dual-node mode")
     parser.add_argument(
+        "--node-id", default="A", choices=["A", "B"],
+        help="Node identity for dual mode: A (relay) or B (peer). Default: A",
+    )
+    parser.add_argument(
         "--mode-passive", dest="mode", action="store_const", const="passive",
         default="active",
         help="Passive mode: hooks capture metrics only, no tensor mutation.",
@@ -66,6 +70,7 @@ def main() -> None:
     wrapper = UniversalHookWrapper(
         model=model,
         config=model.config,
+        node_id=args.node_id,
         enable_dual=args.dual,
         mode=args.mode,
         flux_ratio=0.25,
@@ -75,6 +80,23 @@ def main() -> None:
     print(f"[Node] mode={args.mode}, Bridge: layers {wrapper.mid_idx} → {wrapper.last_idx} "
           f"({wrapper.num_layers} total), {int(wrapper.head_mask.sum())}/"
           f"{wrapper.num_heads} heads active")
+
+    # Dual-node startup barrier: block until the partner subscriber is
+    # connected so PUB/SUB does not drop the early exchange (slow-joiner).
+    # This example runs a single forward pass, so it exercises fewer exchange
+    # rounds than start_node.py, but still needs the barrier to sync at all.
+    if args.dual and getattr(wrapper.bridge, "dual_link", None) is not None:
+        from unitarity_labs.core.handshake import HandshakeTimeout, IncompatibleNode
+        print(f"[Node] Dual mode: waiting for partner handshake "
+              f"(node {args.node_id})...")
+        try:
+            info = wrapper.bridge.dual_link.synchronize(timeout_ms=30000)
+            print(f"[Node] Partner synced: remote_id={info.get('remote_id')}, "
+                  f"epoch_len={info.get('epoch_len')}")
+        except HandshakeTimeout:
+            print("[Node] WARN: no partner handshake before timeout -> solo mode.")
+        except IncompatibleNode as e:
+            print(f"[Node] WARN: partner incompatible ({e}) -> solo mode.")
 
     # Generate
     inputs = tokenizer(args.prompt, return_tensors="pt")
