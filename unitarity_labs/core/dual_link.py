@@ -222,16 +222,47 @@ class DualNodeEntanglementBridge:
         d = h_local.shape[-1]
         device = h_local.device
 
-        # Build projection matrix from partner basis
-        # partner_basis: (batch, k, d) — project h_local onto partner subspace
+        # Build projection matrix from partner basis.
+        #
+        # CONTRACT: partner_basis is a 2-D (d, k) orthonormal column basis --
+        # the shape produced and transmitted by the pipeline (send side emits
+        # the SVD column basis U of shape (samples_or_d, q)). For a column
+        # basis P of shape (d, k), the orthogonal projector onto its column
+        # span is P @ P^T, an (d, d) matrix; the projection of a row vector h
+        # is h @ (P @ P^T).
+        #
+        # We normalise to that 2-D (d, k) contract here. If the basis arrives
+        # 3-D ((batch, k, d) or (batch, d, k)) we collapse the leading batch
+        # dimension by averaging, then orient by matching the feature dim d to
+        # h_local's last dimension. A square ambiguous case prefers the
+        # already-(d, k) orientation.
         P = partner_basis.float()
-        # P^T P gives (batch, d, d) projection
-        proj = P.transpose(-2, -1) @ P  # (batch, d, d)
-        proj_mean = proj.mean(0)  # (d, d) average across batch
+        if P.dim() == 3:
+            # Average across the leading batch dimension -> 2-D.
+            P = P.mean(0)
+        if P.dim() != 2:
+            raise ValueError(
+                "partner_basis must reduce to a 2-D (d, k) basis; got shape "
+                f"{tuple(partner_basis.shape)} (expected last/first dim == d={d})"
+            )
+        if P.shape[0] == d:
+            pass  # already (d, k)
+        elif P.shape[1] == d:
+            P = P.transpose(-1, -2)  # (k, d) -> (d, k)
+        else:
+            raise ValueError(
+                "partner_basis shape is incompatible with h_local feature dim: "
+                f"got 2-D basis {tuple(P.shape)} but expected one dim == d={d} "
+                f"(h_local last dim); original partner_basis shape "
+                f"{tuple(partner_basis.shape)}"
+            )
+
+        # Orthogonal projector onto the partner column span: (d, k) @ (k, d).
+        Pp = P @ P.transpose(-1, -2)  # (d, d)
 
         # v = h_local - proj(h_local onto partner)
         h_f = h_local.float()
-        h_proj = h_f @ proj_mean  # (..., d)
+        h_proj = h_f @ Pp  # (..., d) @ (d, d) -> (..., d)
         v = h_f - h_proj
 
         # Householder reflection: U = I - 2 v v^T / ||v||^2
