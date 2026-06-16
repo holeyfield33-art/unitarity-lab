@@ -178,6 +178,7 @@ class CrossLayerEntanglementHook:
         # Internal state
         self._source_activation: Optional[torch.Tensor] = None
         self._sink_activation: Optional[torch.Tensor] = None
+        self._raw_sink_activation: Optional[torch.Tensor] = None
         self._bridge_eigenvectors: Optional[torch.Tensor] = None
         self._bridge_bias: Optional[torch.Tensor] = None
         self._bell_correlation: float = 0.0
@@ -244,6 +245,11 @@ class CrossLayerEntanglementHook:
             return output
 
         act = output[0] if isinstance(output, (tuple, list)) else output
+
+        # Cache the raw (un-biased) sink activation for bridge-contribution
+        # measurement. This is instrumentation only and does not affect the
+        # injected/returned value below.
+        self._raw_sink_activation = act.detach()
 
         # --- Active-mode device/dtype coercion (Colab split-device fix) ---
         # The sink activation lives on whatever device HF placed this layer;
@@ -482,6 +488,16 @@ class CrossLayerEntanglementHook:
             return 0.0
         return _manifold_coherence_zeta(
             self._source_activation, self._sink_activation
+        )
+
+    @property
+    def raw_sink_zeta(self) -> float:
+        """Signed cosine zeta between source and the UN-biased sink (bridge
+        contribution baseline). Returns 0.0 if activations unavailable."""
+        if self._source_activation is None or self._raw_sink_activation is None:
+            return 0.0
+        return _manifold_coherence_zeta(
+            self._source_activation, self._raw_sink_activation
         )
 
     @property
