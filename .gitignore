@@ -12,3 +12,10 @@ playwright-report/
 notebooks/*.ipynb_checkpoints/
 executed_*.ipynb
 pypi_dist/
+
+# Sprint 3-4 generated compilation artefacts (multi-GB; regenerate from training scripts)
+final_adapters/
+merged_model/
+mlc_weights/
+lora_checkpoints/
+libs/*.wasm
