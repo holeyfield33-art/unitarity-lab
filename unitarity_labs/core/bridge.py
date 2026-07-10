@@ -364,14 +364,17 @@ class CrossLayerEntanglementHook:
         """
         # Start with random Gaussian sketch
         Q = torch.randn(d, top_k, device=device)
-        Q, _ = torch.linalg.qr(Q)
+        orig_dtype = Q.dtype
+        # fp32 boundary: QR (geqrf) has no bf16 kernel. Iterate in fp32 and
+        # cast the orthonormal basis back to the working dtype at the end.
+        Q, _ = torch.linalg.qr(Q.float())
 
         # Power iteration: Q ← orth(C @ Q)
         for _ in range(n_steps):
-            Q = matvec(Q)  # (d, top_k)
-            Q, _ = torch.linalg.qr(Q)
+            Q = matvec(Q.to(orig_dtype))  # (d, top_k)
+            Q, _ = torch.linalg.qr(Q.float())
 
-        return Q
+        return Q.to(orig_dtype)
 
     # ------------------------------------------------------------------
     # Bias projection
@@ -549,7 +552,9 @@ class CrossLayerEntanglementHook:
         if beta.numel() > 0:
             T += torch.diag(beta, 1) + torch.diag(beta, -1)
 
-        eigvals = torch.linalg.eigvalsh(T)
+        # fp32 boundary: eigvalsh has no bf16 kernel. Result feeds a spectral
+        # gap scalar, so no need to cast back to a low-precision dtype.
+        eigvals = torch.linalg.eigvalsh(T.float())
         eigvals_sorted = eigvals.abs().sort(descending=True).values
 
         if eigvals_sorted.numel() < 2:
@@ -679,16 +684,20 @@ class CrossLayerEntanglementHook:
         Counteracts floating-point drift during long inference runs.
         Also re-orthonormalizes LoRA A columns.
         """
+        # fp32 boundary: QR (geqrf) has no bf16 kernel; cast back to the
+        # eigenvector/adapter working dtype after orthonormalizing.
         if self._bridge_eigenvectors is not None:
-            q, r = torch.linalg.qr(self._bridge_eigenvectors)
+            ev_dtype = self._bridge_eigenvectors.dtype
+            q, r = torch.linalg.qr(self._bridge_eigenvectors.float())
             d = torch.diag(r).sign().view(1, -1)
-            self._bridge_eigenvectors = (q * d).detach()
+            self._bridge_eigenvectors = (q * d).to(ev_dtype).detach()
 
         # Also re-orthonormalize LoRA A columns
         A = self.lora_adapter.lora_A
-        q, r = torch.linalg.qr(A.data)
+        a_dtype = A.data.dtype
+        q, r = torch.linalg.qr(A.data.float())
         d = torch.diag(r).sign().view(1, -1)
-        A.data.copy_((q * d).detach())
+        A.data.copy_((q * d).to(a_dtype).detach())
 
     def get_global_phase(self) -> float:
         """

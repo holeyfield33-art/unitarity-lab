@@ -142,6 +142,8 @@ class DualNodeEntanglementBridge:
 
     def send_krylov_basis(self, krylov_basis: torch.Tensor) -> None:
         """Compress and transmit Krylov subspace via SVD low-rank."""
+        # fp32 at the linalg/serialization boundary: bf16/fp8 have no
+        # svd_lowrank kernel and no numpy dtype. Always serialize fp32.
         A = krylov_basis.float()
         # Clamp to matrix dims: small matrices can't be compressed to a larger rank
         q_eff = min(self.krylov_dim, A.shape[-2], A.shape[-1])
@@ -151,7 +153,7 @@ class DualNodeEntanglementBridge:
             U, _, _ = torch.svd_lowrank(A, q=q_eff)
         msg = {
             'node': self.node_id,
-            'basis': U.cpu().numpy(),
+            'basis': U.to(torch.float32).cpu().numpy(),
             'timestamp': time.monotonic(),
         }
         self.pub.send_pyobj(msg)

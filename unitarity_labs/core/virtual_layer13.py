@@ -178,13 +178,15 @@ class VirtualLayer13(nn.Module):
 
     def _entropy(self, h: torch.Tensor) -> float:
         """Spectral entropy proxy via singular values."""
-        s = torch.linalg.svdvals(h.reshape(-1, h.shape[-1]))
+        # fp32 boundary: svdvals has no bf16 kernel; entropy is a scalar proxy.
+        s = torch.linalg.svdvals(h.reshape(-1, h.shape[-1]).float())
         p = s / (s.sum() + 1e-10)
         return -(p * torch.log(p + 1e-10)).sum().item()
 
     def _hash_psi(self, psi_field: torch.Tensor) -> str:
         """SHA-256 of first 128 elements (for commitment)."""
-        data = psi_field.flatten()[:128].detach().cpu().numpy().tobytes()
+        # fp32 boundary: bf16/fp8 tensors have no numpy dtype; serialize fp32.
+        data = psi_field.flatten()[:128].detach().float().cpu().numpy().tobytes()
         return hashlib.sha256(data).hexdigest()
 
     # ------------------------------------------------------------------

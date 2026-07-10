@@ -547,7 +547,9 @@ class AnchorConsensusGossip:
 
     def anchor_hash(self) -> str:
         """SHA-256 of the current anchor (for gossip)."""
-        data = self._anchor_current.detach().cpu().numpy().tobytes()
+        # fp32 boundary: bf16/fp8 tensors have no numpy dtype; serialize fp32
+        # so a re-anchor from a low-precision activation still hashes.
+        data = self._anchor_current.detach().float().cpu().numpy().tobytes()
         return hashlib.sha256(data).hexdigest()
 
     def step(self) -> bool:
