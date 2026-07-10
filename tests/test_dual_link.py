@@ -337,6 +337,54 @@ class TestCompressionAndLatency:
         assert result is None, "Stale message should be rejected"
         b.close()
 
+    def test_handshake_shaped_message_does_not_raise(self):
+        """BUG-1 regression: a handshake hello/ack dict (no 'timestamp'/'basis')
+        drained on this socket must not raise KeyError — it is skipped and the
+        call returns None (or a valid basis msg if one is also queued)."""
+        b = DualNodeEntanglementBridge(node_id="A", zmq_port=46555)
+        import zmq as _zmq
+
+        # A residual handshake message: dict without 'timestamp' or 'basis'.
+        hello_msg = {'type': 'hello', 'node': 'B', 'nonce': 1234}
+        msgs = [hello_msg, _zmq.Again()]
+
+        def fake_recv(flags=0):
+            item = msgs.pop(0)
+            if isinstance(item, _zmq.Again):
+                raise item
+            return item
+
+        with patch.object(b.sub, 'recv_pyobj', side_effect=fake_recv):
+            result = b.recv_partner_basis()  # must not raise
+        assert result is None, "Handshake-shaped message should be skipped"
+        b.close()
+
+    def test_handshake_then_valid_basis(self):
+        """BUG-1 regression: handshake message ahead of a valid basis message in
+        the drain queue — the handshake is skipped and the fresh basis returned."""
+        b = DualNodeEntanglementBridge(node_id="A", zmq_port=47555)
+        import zmq as _zmq
+
+        hello_msg = {'type': 'hello', 'node': 'B'}
+        basis_msg = {
+            'node': 'B',
+            'basis': torch.randn(4, 16).numpy(),
+            'timestamp': time.monotonic(),
+        }
+        msgs = [hello_msg, basis_msg, _zmq.Again()]
+
+        def fake_recv(flags=0):
+            item = msgs.pop(0)
+            if isinstance(item, _zmq.Again):
+                raise item
+            return item
+
+        with patch.object(b.sub, 'recv_pyobj', side_effect=fake_recv):
+            result = b.recv_partner_basis()
+        assert result is not None, "Valid basis behind handshake should be returned"
+        assert result.shape == (4, 16)
+        b.close()
+
 
 # ======================================================================
 # 21–23. Bridge Integration Hook

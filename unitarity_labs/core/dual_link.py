@@ -198,7 +198,11 @@ class DualNodeEntanglementBridge:
                     continue
                 break
             drained += 1
-            if latest is None or msg.get('timestamp', 0.0) >= latest.get('timestamp', 0.0):
+            # Skip non-basis traffic (residual handshake hello/ack messages
+            # share this socket and have no 'timestamp'/'basis').
+            if not isinstance(msg, dict) or 'timestamp' not in msg or 'basis' not in msg:
+                continue
+            if latest is None or msg['timestamp'] >= latest.get('timestamp', 0.0):
                 latest = msg
 
         if latest is None:
