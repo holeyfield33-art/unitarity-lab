@@ -184,7 +184,24 @@ def test_semantic_lock_anchor_hash_bf16():
 
 
 # ======================================================================
-# 6. ghost_layer — encode_shard (torch.fft.fft)
+# 6. mirror — ProprioceptiveHook dtype coercion (active-mode injection)
+# ======================================================================
+
+def test_proprioceptive_hook_bf16():
+    from unitarity_labs.core.mirror import ProprioceptiveHook
+
+    hook = ProprioceptiveHook(d_model=64, num_metrics=4).to(BF16)
+    x = torch.randn(2, 10, 64, dtype=BF16)
+    # metrics assembled in fp32 (as in the live path) against a bf16 weight;
+    # without dtype coercion this raises "expected m1 and m2 same dtype".
+    metrics = torch.tensor([0.5, 0.1, 0.9, 0.3], dtype=torch.float32)
+    out = hook(x, metrics)
+    assert out.shape == x.shape
+    assert out.dtype == BF16
+
+
+# ======================================================================
+# 7. ghost_layer — encode_shard (torch.fft.fft)
 # ======================================================================
 
 def test_ghost_layer_encode_shard_bf16():

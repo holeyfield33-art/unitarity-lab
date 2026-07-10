@@ -145,11 +145,14 @@ class ProprioceptiveHook(nn.Module):
         -------
         x' : Tensor of same shape as x — with proprioceptive injection.
         """
-        # Ensure metrics are on the same device as the projection weights
-        # (belt-and-suspenders for device_map="auto" / BNB-4bit edge cases)
+        # Ensure metrics match the projection weights' device AND dtype
+        # (belt-and-suspenders for device_map="auto" / BNB-4bit edge cases,
+        # and for low-precision runs where metrics are assembled in fp32 but
+        # the projection weight is bf16/fp16).
         _proj_dev = self.metric_proj.weight.device
-        if metrics.device != _proj_dev:
-            metrics = metrics.to(_proj_dev)
+        _proj_dt = self.metric_proj.weight.dtype
+        if metrics.device != _proj_dev or metrics.dtype != _proj_dt:
+            metrics = metrics.to(device=_proj_dev, dtype=_proj_dt)
 
         # Project metrics to hidden dim and apply tanh saturation
         if metrics.dim() == 1:
