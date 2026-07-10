@@ -240,11 +240,25 @@ class CrossLayerEntanglementHook:
     def _sink_hook(
         self, _module: nn.Module, _input: tuple, output: torch.Tensor
     ) -> torch.Tensor:
-        """Inject LoRA-adapted entanglement bias into the sink layer output."""
-        if not self._enabled or self._bridge_bias is None:
-            return output
+        """Inject LoRA-adapted entanglement bias into the sink layer output.
 
+        Capture-only path: when the bridge is disabled (passive mode) or no
+        bias has been produced yet, the sink activation is still captured so
+        ζ / Bell correlation can be measured, but NO LoRA and NO bias are
+        applied — the returned output is byte-identical to the hookless model.
+        """
         act = output[0] if isinstance(output, (tuple, list)) else output
+
+        if not self._enabled or self._bridge_bias is None:
+            # Passive / capture-only: no bias, so the raw sink IS the sink.
+            self._raw_sink_activation = act.detach()
+            self._sink_activation = act.detach()
+            if self._source_activation is not None:
+                self._bell_correlation = self._compute_bell_correlation(
+                    self._source_activation, act
+                )
+                self._bell_history.append(self._bell_correlation)
+            return output
 
         # Cache the raw (un-biased) sink activation for bridge-contribution
         # measurement. This is instrumentation only and does not affect the
@@ -484,8 +498,9 @@ class CrossLayerEntanglementHook:
         Computed via :func:`core.metrics.manifold_coherence_zeta` (signed,
         zero-padded cosine) on the same source/sink tensors used for the
         Bell correlation. Distinct from ``bell_correlation``, which is an
-        abs'd, truncated cosine. Returns ``0.0`` until a sink activation has
-        been captured (e.g. in passive mode, where the sink hook is bypassed).
+        abs'd, truncated cosine. Returns ``0.0`` only until the sink hook has
+        run once; passive mode now captures the (un-biased) sink activation in
+        capture-only form, so this reports a real value there too.
         """
         if self._source_activation is None or self._sink_activation is None:
             return 0.0

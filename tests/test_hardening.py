@@ -272,6 +272,45 @@ class TestPassiveMode:
         m = w.get_metrics()
         assert "manifold_coherence_zeta" in m
 
+    def test_passive_measures_nonzero_zeta(self):
+        """BUG-3 regression: passive mode captures the sink activation and
+        therefore reports a nonzero zeta after a forward pass (previously the
+        sink hook early-returned, leaving zeta stuck at 0.0)."""
+        wrapper = _make_wrapper(mode="passive")
+        assert wrapper.bridge._sink_activation is None
+        x = torch.randn(1, 8, 64)
+        with torch.no_grad():
+            wrapper(x)
+        # Sink activation must have been captured in capture-only form.
+        assert wrapper.bridge._sink_activation is not None
+        # In passive mode the captured sink is the un-biased activation.
+        assert torch.equal(
+            wrapper.bridge._sink_activation, wrapper.bridge._raw_sink_activation
+        )
+        zeta = wrapper.get_metrics()["manifold_coherence_zeta"]
+        assert zeta != 0.0, "passive zeta must be measured, not 0.0"
+
+    def test_passive_output_byte_identical_to_hookless(self):
+        """Passive-hooked output must be byte-identical (not just close) to the
+        same model run without any hooks — proves zero mutation."""
+        from unitarity_labs.core.universal_hook import UniversalHookWrapper
+
+        x = torch.randn(1, 8, 64)
+
+        torch.manual_seed(1234)
+        m_bare = ToyTransformer(d_model=64, num_layers=13)
+        with torch.no_grad():
+            out_bare = m_bare(x)
+
+        torch.manual_seed(1234)
+        m_pass = ToyTransformer(d_model=64, num_layers=13)
+        wp = UniversalHookWrapper(model=m_pass, config=_ToyConfig(), mode="passive")
+        with torch.no_grad():
+            out_pass = wp(x)
+
+        assert torch.equal(out_bare, out_pass), \
+            "Passive mode must be byte-identical to the hookless model"
+
 
 # ======================================================================
 # Phase 5 — Active Mode Still Intervenes
