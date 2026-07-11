@@ -232,7 +232,7 @@ class UniversalHookWrapper:
                         elif vec.ndim == 2:  # [S, D] or [B, D]
                             vec = vec[-1] if vec.shape[0] > 1 else vec[0]
                         if vec.ndim == 1 and vec.shape[0] == self.hidden_dim:
-                            zeta = getattr(self.bridge, "bell_correlation", 0.85)
+                            zeta = getattr(self.bridge, "raw_sink_zeta", 0.0)
                             self.orchestrator.ingest(vec, zeta=zeta)
                 except Exception as exc:  # pragma: no cover
                     _log.debug("Orchestrator ingest skipped: %s", exc)
@@ -288,11 +288,12 @@ class UniversalHookWrapper:
         """Collect current bridge/flux metrics for the dashboard."""
         metrics = {
             "mode": self.mode,
-            # Real zeta (signed, zero-padded cosine) computed from the same
-            # source/sink tensors the bridge uses; distinct from the abs'd,
-            # truncated cosine reported as bell_correlation below.
-            "manifold_coherence_zeta": self.bridge.manifold_coherence_zeta,
-            "bell_correlation": self.bridge.bell_correlation,
+            # zeta_raw: pre-intervention cross-layer cosine (source vs the
+            # UN-biased sink). This is the honest baseline and, in passive
+            # mode, the only zeta there is. Note: ~0.99 on real transformers
+            # due to representational anisotropy -- only the cross-sample-null
+            # gap below is a meaningful signal.
+            "zeta_raw": self.bridge.raw_sink_zeta,
             "spectral_gap": self.bridge.spectral_gap(),
             "flux_epsilon": self.bridge.flux_governor.epsilon,
             "flux_kicks_total": len(self.bridge.flux_governor.kick_history),
@@ -302,6 +303,20 @@ class UniversalHookWrapper:
             "total_heads": self.num_heads,
             "step": self.step_counter,
         }
+        # Active mode additionally exposes the post-bridge (mutated-sink)
+        # cosine, explicitly labeled and distinct from the raw baseline.
+        if self.mode == "active":
+            metrics["zeta_post_bridge"] = self.bridge.manifold_coherence_zeta
+        # Honest significance test: cross-sample null gap vs prior-sink
+        # controls (only emitted once >=3 controls have accumulated).
+        csn = self.bridge.cross_sample_null_metrics()
+        if csn is not None:
+            metrics["cross_sample_null"] = {
+                "null_mean": csn["null_mean"],
+                "null_std": csn["null_std"],
+                "gap": csn["gap"],
+                "z_score": csn["z_score"],
+            }
         if getattr(self, "orchestrator", None) is not None:
             metrics["bocpd_changepoint_prob"] = getattr(
                 self.orchestrator, "last_changepoint_prob", 0.0

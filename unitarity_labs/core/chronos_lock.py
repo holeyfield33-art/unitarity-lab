@@ -230,7 +230,9 @@ class ChronosLock:
             else:
                 # Padé via matrix_exp for small dims, Taylor otherwise
                 if dim <= 128:
-                    U = torch.matrix_exp(self._J * t_wait)
+                    # fp32 boundary: matrix_exp has no bf16 kernel. Cast back to
+                    # h.dtype so the subsequent U @ h_flat.T matmul dtype-matches.
+                    U = torch.matrix_exp((self._J * t_wait).float()).to(h.dtype)
                 else:
                     Jt = self._J * t_wait
                     I = torch.eye(dim, device=h.device, dtype=h.dtype)

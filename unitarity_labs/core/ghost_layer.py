@@ -243,7 +243,9 @@ class RecursiveMirror(nn.Module):
         low_freq : Tensor — first 32 frequency bins.
         metadata : dict with ``energy`` and ``slope`` keys.
         """
-        K_freq = torch.fft.fft(krylov_basis, dim=1)
+        # fp32 boundary: torch.fft has no bf16 kernel. Encode in fp32; the
+        # returned shard is complex64, which serializes/round-trips cleanly.
+        K_freq = torch.fft.fft(krylov_basis.float(), dim=1)
         max_bins = min(32, K_freq.shape[1])
         low_freq = K_freq[:, :max_bins, :]
         energy = torch.norm(low_freq).item()

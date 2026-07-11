@@ -22,6 +22,7 @@ import json
 import math
 import subprocess
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -270,7 +271,49 @@ class TestPassiveMode:
     def test_passive_metrics_include_zeta(self):
         w = _make_wrapper(mode="passive")
         m = w.get_metrics()
-        assert "manifold_coherence_zeta" in m
+        # zeta_raw is the honest pre/no-intervention cosine; passive mode does
+        # not emit a zeta_post_bridge (there is no intervention to report).
+        assert "zeta_raw" in m
+        assert "zeta_post_bridge" not in m
+
+    def test_passive_measures_nonzero_zeta(self):
+        """BUG-3 regression: passive mode captures the sink activation and
+        therefore reports a nonzero zeta after a forward pass (previously the
+        sink hook early-returned, leaving zeta stuck at 0.0)."""
+        wrapper = _make_wrapper(mode="passive")
+        assert wrapper.bridge._sink_activation is None
+        x = torch.randn(1, 8, 64)
+        with torch.no_grad():
+            wrapper(x)
+        # Sink activation must have been captured in capture-only form.
+        assert wrapper.bridge._sink_activation is not None
+        # In passive mode the captured sink is the un-biased activation.
+        assert torch.equal(
+            wrapper.bridge._sink_activation, wrapper.bridge._raw_sink_activation
+        )
+        zeta = wrapper.get_metrics()["zeta_raw"]
+        assert zeta != 0.0, "passive zeta must be measured, not 0.0"
+
+    def test_passive_output_byte_identical_to_hookless(self):
+        """Passive-hooked output must be byte-identical (not just close) to the
+        same model run without any hooks — proves zero mutation."""
+        from unitarity_labs.core.universal_hook import UniversalHookWrapper
+
+        x = torch.randn(1, 8, 64)
+
+        torch.manual_seed(1234)
+        m_bare = ToyTransformer(d_model=64, num_layers=13)
+        with torch.no_grad():
+            out_bare = m_bare(x)
+
+        torch.manual_seed(1234)
+        m_pass = ToyTransformer(d_model=64, num_layers=13)
+        wp = UniversalHookWrapper(model=m_pass, config=_ToyConfig(), mode="passive")
+        with torch.no_grad():
+            out_pass = wp(x)
+
+        assert torch.equal(out_bare, out_pass), \
+            "Passive mode must be byte-identical to the hookless model"
 
 
 # ======================================================================
@@ -287,6 +330,40 @@ class TestActiveMode:
         w = _make_wrapper(mode="active")
         m = w.get_metrics()
         assert m["mode"] == "active"
+
+    def test_no_output_path_emits_bell_correlation(self):
+        """DESIGN-2: bell_correlation is a duplicate of zeta and must not
+        appear in the session metrics output (any mode)."""
+        for mode in ("active", "passive"):
+            m = _make_wrapper(mode=mode).get_metrics()
+            assert "bell_correlation" not in m
+            assert "manifold_coherence_zeta" not in m
+
+    def test_active_reports_raw_and_post_bridge_separately(self):
+        """DESIGN-2: active mode reports the pre-intervention baseline
+        (zeta_raw) and the post-bridge cosine (zeta_post_bridge) as distinct
+        keys, so the circular self-comparison is no longer the headline."""
+        w = _make_wrapper(mode="active")
+        x = torch.randn(1, 8, 64)
+        with torch.no_grad():
+            w(x)
+        m = w.get_metrics()
+        assert "zeta_raw" in m
+        assert "zeta_post_bridge" in m
+
+    def test_cross_sample_null_emitted_after_enough_controls(self):
+        """DESIGN-2: once >=3 prior-sink controls accumulate, the honest
+        cross-sample-null fields are included."""
+        w = _make_wrapper(mode="active")
+        m0 = w.get_metrics()
+        assert "cross_sample_null" not in m0  # no controls yet
+        with torch.no_grad():
+            for _ in range(5):
+                w(torch.randn(1, 8, 64))
+        m = w.get_metrics()
+        assert "cross_sample_null" in m
+        csn = m["cross_sample_null"]
+        assert set(csn) == {"null_mean", "null_std", "gap", "z_score"}
 
     def test_invalid_mode_raises(self):
         from unitarity_labs.core.universal_hook import UniversalHookWrapper
@@ -423,19 +500,47 @@ class TestBenchmarkHarness:
         from benchmarks._harness import compute_row
         source = torch.randn(1, 16, 64)
         sink = source + 0.05 * torch.randn(1, 16, 64)
-        row = compute_row(source, sink, latency_ms=5.0, accuracy=0.9)
-        assert set(row.keys()) == {"zeta", "baseline_cosine", "permutation_p", "latency_ms", "accuracy"}
+        row = compute_row(source, sink, latency_ms=5.0)
+        # No synthetic accuracy, no near-degenerate permutation_p.
+        assert set(row.keys()) == {"zeta", "baseline_cosine", "latency_ms"}
 
-    def test_gsm8k_runs(self):
-        """gsm8k benchmark must run without error."""
+    def test_pipeline_demo_runs_and_prints_banner(self):
+        """The relocated demo must run, print the DEMO banner, and emit NO
+        synthetic accuracy/permutation columns."""
         result = subprocess.run(
-            [sys.executable, "-m", "benchmarks.gsm8k", "--n-problems", "2", "--seed", "1"],
-            capture_output=True, text=True, timeout=30,
+            [sys.executable, "-m", "benchmarks.pipeline_demos.gsm8k",
+             "--n-problems", "2", "--seed", "1"],
+            capture_output=True, text=True, timeout=60,
         )
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
+        assert result.returncode == 0, result.stderr
+        assert "PIPELINE DEMO" in result.stdout
+        # JSON is the tail of stdout after the banner.
+        json_start = result.stdout.index("{")
+        data = json.loads(result.stdout[json_start:])
         assert "results" in data
         assert len(data["results"]) == 2
+        for row in data["results"]:
+            assert "accuracy" not in row
+            assert "permutation_p" not in row
+
+    def test_real_gsm8k_has_no_synthetic_fields(self):
+        """The real evaluation source must not fabricate accuracy/latency.
+
+        Strips the module docstring (which names these anti-patterns in prose)
+        and checks the executable body contains no such calls.
+        """
+        import ast
+        src = Path("benchmarks/real_gsm8k.py").read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        # Drop the module docstring node before re-emitting the body.
+        if (tree.body and isinstance(tree.body[0], ast.Expr)
+                and isinstance(tree.body[0].value, ast.Constant)):
+            tree.body = tree.body[1:]
+        code = ast.dump(tree)
+        # Fabrication call-sites must not appear in the code (attribute names).
+        assert "'rand'" not in code and "'randn'" not in code
+        assert "'sleep'" not in code
+        assert "permutation_test_zeta" not in code
 
 
 # ======================================================================

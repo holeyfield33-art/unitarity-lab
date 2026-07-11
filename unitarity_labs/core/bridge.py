@@ -35,6 +35,7 @@ Physics basis:
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
@@ -48,7 +49,10 @@ from .flux import (
     STAGGER_FRACTION,
 )
 from .horizons import _lanczos_tridiagonal
-from .metrics import manifold_coherence_zeta as _manifold_coherence_zeta
+from .metrics import (
+    manifold_coherence_zeta as _manifold_coherence_zeta,
+    cross_sample_null_zeta as _cross_sample_null_zeta,
+)
 from .mirror import EigenConsciousnessIntegrator, ProprioceptiveHook, TopologicalGate
 from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 
@@ -185,6 +189,12 @@ class CrossLayerEntanglementHook:
         self._bell_history: list = []
         self._handles: list = []
 
+        # Ring buffer of recent sink activations from PRIOR forward passes.
+        # Used as the cross-sample null distribution for the honest zeta
+        # significance test (metrics.cross_sample_null_zeta): the current
+        # matched pair is (source, sink), the null is (source, prior sinks).
+        self._control_sink_buffer: deque = deque(maxlen=8)
+
         self._register_hooks()
 
     def _infer_d_model(self) -> int:
@@ -240,11 +250,26 @@ class CrossLayerEntanglementHook:
     def _sink_hook(
         self, _module: nn.Module, _input: tuple, output: torch.Tensor
     ) -> torch.Tensor:
-        """Inject LoRA-adapted entanglement bias into the sink layer output."""
-        if not self._enabled or self._bridge_bias is None:
-            return output
+        """Inject LoRA-adapted entanglement bias into the sink layer output.
 
+        Capture-only path: when the bridge is disabled (passive mode) or no
+        bias has been produced yet, the sink activation is still captured so
+        ζ / Bell correlation can be measured, but NO LoRA and NO bias are
+        applied — the returned output is byte-identical to the hookless model.
+        """
         act = output[0] if isinstance(output, (tuple, list)) else output
+
+        if not self._enabled or self._bridge_bias is None:
+            # Passive / capture-only: no bias, so the raw sink IS the sink.
+            self._push_control_sink()
+            self._raw_sink_activation = act.detach()
+            self._sink_activation = act.detach()
+            if self._source_activation is not None:
+                self._bell_correlation = self._compute_bell_correlation(
+                    self._source_activation, act
+                )
+                self._bell_history.append(self._bell_correlation)
+            return output
 
         # Cache the raw (un-biased) sink activation for bridge-contribution
         # measurement. This is instrumentation only and does not affect the
@@ -284,6 +309,7 @@ class CrossLayerEntanglementHook:
         self._bell_history.append(self._bell_correlation)
         # Cache the exact source/sink tensors used here so the real
         # manifold_coherence_zeta metric can be computed from them later.
+        self._push_control_sink()
         self._sink_activation = biased.detach()
 
         # Hawking Flux: check for stagnation and apply kick if needed
@@ -364,14 +390,17 @@ class CrossLayerEntanglementHook:
         """
         # Start with random Gaussian sketch
         Q = torch.randn(d, top_k, device=device)
-        Q, _ = torch.linalg.qr(Q)
+        orig_dtype = Q.dtype
+        # fp32 boundary: QR (geqrf) has no bf16 kernel. Iterate in fp32 and
+        # cast the orthonormal basis back to the working dtype at the end.
+        Q, _ = torch.linalg.qr(Q.float())
 
         # Power iteration: Q ← orth(C @ Q)
         for _ in range(n_steps):
-            Q = matvec(Q)  # (d, top_k)
-            Q, _ = torch.linalg.qr(Q)
+            Q = matvec(Q.to(orig_dtype))  # (d, top_k)
+            Q, _ = torch.linalg.qr(Q.float())
 
-        return Q
+        return Q.to(orig_dtype)
 
     # ------------------------------------------------------------------
     # Bias projection
@@ -481,8 +510,9 @@ class CrossLayerEntanglementHook:
         Computed via :func:`core.metrics.manifold_coherence_zeta` (signed,
         zero-padded cosine) on the same source/sink tensors used for the
         Bell correlation. Distinct from ``bell_correlation``, which is an
-        abs'd, truncated cosine. Returns ``0.0`` until a sink activation has
-        been captured (e.g. in passive mode, where the sink hook is bypassed).
+        abs'd, truncated cosine. Returns ``0.0`` only until the sink hook has
+        run once; passive mode now captures the (un-biased) sink activation in
+        capture-only form, so this reports a real value there too.
         """
         if self._source_activation is None or self._sink_activation is None:
             return 0.0
@@ -498,6 +528,36 @@ class CrossLayerEntanglementHook:
             return 0.0
         return _manifold_coherence_zeta(
             self._source_activation, self._raw_sink_activation
+        )
+
+    def _push_control_sink(self) -> None:
+        """Move the current sink activation into the cross-sample null buffer.
+
+        Called at the start of each sink-hook update so the buffer holds sink
+        activations from PRIOR forward passes only — never the current matched
+        sink. Stored detached and moved to CPU to bound device memory.
+        """
+        if self._sink_activation is not None:
+            self._control_sink_buffer.append(
+                self._sink_activation.detach().to("cpu")
+            )
+
+    def cross_sample_null_metrics(self) -> Optional[dict]:
+        """Honest zeta significance test against prior-sink controls.
+
+        Returns the :func:`core.metrics.cross_sample_null_zeta` result
+        (``null_mean``/``null_std``/``gap``/``z_score`` etc.) comparing the
+        current matched (source, sink) zeta against zeta(source, prior sinks).
+        Requires at least 3 buffered controls; returns ``None`` otherwise.
+        """
+        if self._source_activation is None or self._sink_activation is None:
+            return None
+        controls = list(self._control_sink_buffer)
+        if len(controls) < 3:
+            return None
+        src = self._source_activation
+        return _cross_sample_null_zeta(
+            src, self._sink_activation, [c.to(src.device) for c in controls]
         )
 
     @property
@@ -549,7 +609,9 @@ class CrossLayerEntanglementHook:
         if beta.numel() > 0:
             T += torch.diag(beta, 1) + torch.diag(beta, -1)
 
-        eigvals = torch.linalg.eigvalsh(T)
+        # fp32 boundary: eigvalsh has no bf16 kernel. Result feeds a spectral
+        # gap scalar, so no need to cast back to a low-precision dtype.
+        eigvals = torch.linalg.eigvalsh(T.float())
         eigvals_sorted = eigvals.abs().sort(descending=True).values
 
         if eigvals_sorted.numel() < 2:
@@ -679,16 +741,20 @@ class CrossLayerEntanglementHook:
         Counteracts floating-point drift during long inference runs.
         Also re-orthonormalizes LoRA A columns.
         """
+        # fp32 boundary: QR (geqrf) has no bf16 kernel; cast back to the
+        # eigenvector/adapter working dtype after orthonormalizing.
         if self._bridge_eigenvectors is not None:
-            q, r = torch.linalg.qr(self._bridge_eigenvectors)
+            ev_dtype = self._bridge_eigenvectors.dtype
+            q, r = torch.linalg.qr(self._bridge_eigenvectors.float())
             d = torch.diag(r).sign().view(1, -1)
-            self._bridge_eigenvectors = (q * d).detach()
+            self._bridge_eigenvectors = (q * d).to(ev_dtype).detach()
 
         # Also re-orthonormalize LoRA A columns
         A = self.lora_adapter.lora_A
-        q, r = torch.linalg.qr(A.data)
+        a_dtype = A.data.dtype
+        q, r = torch.linalg.qr(A.data.float())
         d = torch.diag(r).sign().view(1, -1)
-        A.data.copy_((q * d).detach())
+        A.data.copy_((q * d).to(a_dtype).detach())
 
     def get_global_phase(self) -> float:
         """

@@ -1,9 +1,12 @@
-"""benchmarks — TMRP-13 evaluation harness for unitarity-lab v3.0.0-Singularity.
+"""benchmarks — evaluation and metric-plumbing scripts for unitarity-lab.
 
-Each benchmark script supports:
-  --mode passive|active   (passive = metrics only, active = full intervention)
-  --seed INT              (deterministic reproducibility)
-  --output FILE           (JSON results path)
-
-Reported columns: zeta, baseline_cosine, permutation_p, latency_ms, accuracy.
+Contents
+--------
+- ``real_gsm8k.py``      : a real, graded GSM8K run (loads the dataset, generates
+                          answers, grades by numeric extraction, records honest
+                          per-problem metrics). This is the actual evaluation.
+- ``pipeline_demos/``    : metric-plumbing DEMOS over synthetic tensors. They
+                          print a "PIPELINE DEMO — synthetic tensors, not an
+                          evaluation." banner and emit no accuracy. Use them to
+                          inspect the metric column/JSON layout, nothing more.
 """
