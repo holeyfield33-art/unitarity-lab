@@ -22,6 +22,7 @@ import json
 import math
 import subprocess
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -499,19 +500,47 @@ class TestBenchmarkHarness:
         from benchmarks._harness import compute_row
         source = torch.randn(1, 16, 64)
         sink = source + 0.05 * torch.randn(1, 16, 64)
-        row = compute_row(source, sink, latency_ms=5.0, accuracy=0.9)
-        assert set(row.keys()) == {"zeta", "baseline_cosine", "permutation_p", "latency_ms", "accuracy"}
+        row = compute_row(source, sink, latency_ms=5.0)
+        # No synthetic accuracy, no near-degenerate permutation_p.
+        assert set(row.keys()) == {"zeta", "baseline_cosine", "latency_ms"}
 
-    def test_gsm8k_runs(self):
-        """gsm8k benchmark must run without error."""
+    def test_pipeline_demo_runs_and_prints_banner(self):
+        """The relocated demo must run, print the DEMO banner, and emit NO
+        synthetic accuracy/permutation columns."""
         result = subprocess.run(
-            [sys.executable, "-m", "benchmarks.gsm8k", "--n-problems", "2", "--seed", "1"],
-            capture_output=True, text=True, timeout=30,
+            [sys.executable, "-m", "benchmarks.pipeline_demos.gsm8k",
+             "--n-problems", "2", "--seed", "1"],
+            capture_output=True, text=True, timeout=60,
         )
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
+        assert result.returncode == 0, result.stderr
+        assert "PIPELINE DEMO" in result.stdout
+        # JSON is the tail of stdout after the banner.
+        json_start = result.stdout.index("{")
+        data = json.loads(result.stdout[json_start:])
         assert "results" in data
         assert len(data["results"]) == 2
+        for row in data["results"]:
+            assert "accuracy" not in row
+            assert "permutation_p" not in row
+
+    def test_real_gsm8k_has_no_synthetic_fields(self):
+        """The real evaluation source must not fabricate accuracy/latency.
+
+        Strips the module docstring (which names these anti-patterns in prose)
+        and checks the executable body contains no such calls.
+        """
+        import ast
+        src = Path("benchmarks/real_gsm8k.py").read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        # Drop the module docstring node before re-emitting the body.
+        if (tree.body and isinstance(tree.body[0], ast.Expr)
+                and isinstance(tree.body[0].value, ast.Constant)):
+            tree.body = tree.body[1:]
+        code = ast.dump(tree)
+        # Fabrication call-sites must not appear in the code (attribute names).
+        assert "'rand'" not in code and "'randn'" not in code
+        assert "'sleep'" not in code
+        assert "permutation_test_zeta" not in code
 
 
 # ======================================================================

@@ -1,4 +1,15 @@
-"""benchmarks/_harness.py — shared benchmark helpers."""
+"""benchmarks/_harness.py — shared benchmark helpers.
+
+Note
+----
+``compute_row`` here computes only *metric* columns (zeta, baseline cosine,
+measured latency) over whatever tensors it is handed. It deliberately does NOT
+fabricate an ``accuracy`` and does NOT run ``permutation_test_zeta`` (whose
+null is near-degenerate on real activations). The scripts under
+``benchmarks/pipeline_demos/`` feed it *synthetic* tensors purely to
+demonstrate the metric plumbing — they are not an evaluation. For a real,
+graded evaluation see ``benchmarks/real_gsm8k.py``.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +21,7 @@ from typing import Any, Dict, List
 
 import torch
 
-from unitarity_labs.core.metrics import manifold_coherence_zeta, baseline_cosine_meanpool, permutation_test_zeta
+from unitarity_labs.core.metrics import manifold_coherence_zeta, baseline_cosine_meanpool
 
 
 def make_parser(description: str) -> argparse.ArgumentParser:
@@ -38,20 +49,19 @@ def compute_row(
     source: torch.Tensor,
     sink: torch.Tensor,
     latency_ms: float,
-    accuracy: float,
-    n_perm: int = 200,
-    seed: int = 42,
 ) -> Dict[str, Any]:
-    """Compute a single benchmark row with all required columns."""
+    """Compute a single benchmark row of *metric* columns only.
+
+    No ``accuracy`` and no ``permutation_p``: this harness measures cross-layer
+    cosine geometry over the given tensors, nothing more. Accuracy is only
+    meaningful in a real, graded evaluation (see ``real_gsm8k.py``).
+    """
     zeta = manifold_coherence_zeta(source, sink)
     baseline_cos = baseline_cosine_meanpool(source, sink)
-    _, perm_p = permutation_test_zeta(source, sink, n_perm=n_perm, seed=seed)
     return {
         "zeta": round(float(zeta), 6),
         "baseline_cosine": round(float(baseline_cos), 6),
-        "permutation_p": round(float(perm_p), 6),
         "latency_ms": round(latency_ms, 2),
-        "accuracy": round(accuracy, 4),
     }
 
 
