@@ -35,6 +35,7 @@ Physics basis:
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
@@ -48,7 +49,10 @@ from .flux import (
     STAGGER_FRACTION,
 )
 from .horizons import _lanczos_tridiagonal
-from .metrics import manifold_coherence_zeta as _manifold_coherence_zeta
+from .metrics import (
+    manifold_coherence_zeta as _manifold_coherence_zeta,
+    cross_sample_null_zeta as _cross_sample_null_zeta,
+)
 from .mirror import EigenConsciousnessIntegrator, ProprioceptiveHook, TopologicalGate
 from .dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 
@@ -185,6 +189,12 @@ class CrossLayerEntanglementHook:
         self._bell_history: list = []
         self._handles: list = []
 
+        # Ring buffer of recent sink activations from PRIOR forward passes.
+        # Used as the cross-sample null distribution for the honest zeta
+        # significance test (metrics.cross_sample_null_zeta): the current
+        # matched pair is (source, sink), the null is (source, prior sinks).
+        self._control_sink_buffer: deque = deque(maxlen=8)
+
         self._register_hooks()
 
     def _infer_d_model(self) -> int:
@@ -251,6 +261,7 @@ class CrossLayerEntanglementHook:
 
         if not self._enabled or self._bridge_bias is None:
             # Passive / capture-only: no bias, so the raw sink IS the sink.
+            self._push_control_sink()
             self._raw_sink_activation = act.detach()
             self._sink_activation = act.detach()
             if self._source_activation is not None:
@@ -298,6 +309,7 @@ class CrossLayerEntanglementHook:
         self._bell_history.append(self._bell_correlation)
         # Cache the exact source/sink tensors used here so the real
         # manifold_coherence_zeta metric can be computed from them later.
+        self._push_control_sink()
         self._sink_activation = biased.detach()
 
         # Hawking Flux: check for stagnation and apply kick if needed
@@ -516,6 +528,36 @@ class CrossLayerEntanglementHook:
             return 0.0
         return _manifold_coherence_zeta(
             self._source_activation, self._raw_sink_activation
+        )
+
+    def _push_control_sink(self) -> None:
+        """Move the current sink activation into the cross-sample null buffer.
+
+        Called at the start of each sink-hook update so the buffer holds sink
+        activations from PRIOR forward passes only — never the current matched
+        sink. Stored detached and moved to CPU to bound device memory.
+        """
+        if self._sink_activation is not None:
+            self._control_sink_buffer.append(
+                self._sink_activation.detach().to("cpu")
+            )
+
+    def cross_sample_null_metrics(self) -> Optional[dict]:
+        """Honest zeta significance test against prior-sink controls.
+
+        Returns the :func:`core.metrics.cross_sample_null_zeta` result
+        (``null_mean``/``null_std``/``gap``/``z_score`` etc.) comparing the
+        current matched (source, sink) zeta against zeta(source, prior sinks).
+        Requires at least 3 buffered controls; returns ``None`` otherwise.
+        """
+        if self._source_activation is None or self._sink_activation is None:
+            return None
+        controls = list(self._control_sink_buffer)
+        if len(controls) < 3:
+            return None
+        src = self._source_activation
+        return _cross_sample_null_zeta(
+            src, self._sink_activation, [c.to(src.device) for c in controls]
         )
 
     @property

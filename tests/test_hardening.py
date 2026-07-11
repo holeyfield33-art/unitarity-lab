@@ -270,7 +270,10 @@ class TestPassiveMode:
     def test_passive_metrics_include_zeta(self):
         w = _make_wrapper(mode="passive")
         m = w.get_metrics()
-        assert "manifold_coherence_zeta" in m
+        # zeta_raw is the honest pre/no-intervention cosine; passive mode does
+        # not emit a zeta_post_bridge (there is no intervention to report).
+        assert "zeta_raw" in m
+        assert "zeta_post_bridge" not in m
 
     def test_passive_measures_nonzero_zeta(self):
         """BUG-3 regression: passive mode captures the sink activation and
@@ -287,7 +290,7 @@ class TestPassiveMode:
         assert torch.equal(
             wrapper.bridge._sink_activation, wrapper.bridge._raw_sink_activation
         )
-        zeta = wrapper.get_metrics()["manifold_coherence_zeta"]
+        zeta = wrapper.get_metrics()["zeta_raw"]
         assert zeta != 0.0, "passive zeta must be measured, not 0.0"
 
     def test_passive_output_byte_identical_to_hookless(self):
@@ -326,6 +329,40 @@ class TestActiveMode:
         w = _make_wrapper(mode="active")
         m = w.get_metrics()
         assert m["mode"] == "active"
+
+    def test_no_output_path_emits_bell_correlation(self):
+        """DESIGN-2: bell_correlation is a duplicate of zeta and must not
+        appear in the session metrics output (any mode)."""
+        for mode in ("active", "passive"):
+            m = _make_wrapper(mode=mode).get_metrics()
+            assert "bell_correlation" not in m
+            assert "manifold_coherence_zeta" not in m
+
+    def test_active_reports_raw_and_post_bridge_separately(self):
+        """DESIGN-2: active mode reports the pre-intervention baseline
+        (zeta_raw) and the post-bridge cosine (zeta_post_bridge) as distinct
+        keys, so the circular self-comparison is no longer the headline."""
+        w = _make_wrapper(mode="active")
+        x = torch.randn(1, 8, 64)
+        with torch.no_grad():
+            w(x)
+        m = w.get_metrics()
+        assert "zeta_raw" in m
+        assert "zeta_post_bridge" in m
+
+    def test_cross_sample_null_emitted_after_enough_controls(self):
+        """DESIGN-2: once >=3 prior-sink controls accumulate, the honest
+        cross-sample-null fields are included."""
+        w = _make_wrapper(mode="active")
+        m0 = w.get_metrics()
+        assert "cross_sample_null" not in m0  # no controls yet
+        with torch.no_grad():
+            for _ in range(5):
+                w(torch.randn(1, 8, 64))
+        m = w.get_metrics()
+        assert "cross_sample_null" in m
+        csn = m["cross_sample_null"]
+        assert set(csn) == {"null_mean", "null_std", "gap", "z_score"}
 
     def test_invalid_mode_raises(self):
         from unitarity_labs.core.universal_hook import UniversalHookWrapper

@@ -40,7 +40,14 @@ def _build_stats_table(title: str, metrics: dict, vram: tuple) -> Table:
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="bold white", justify="right")
 
-    table.add_row("Manifold Coherence ζ", f"{metrics.get('manifold_coherence_zeta', metrics.get('bell_correlation', 0)):.4f}")
+    table.add_row("ζ raw (pre-bridge)", f"{metrics.get('zeta_raw', 0):.4f}")
+    if "zeta_post_bridge" in metrics:
+        table.add_row("ζ post-bridge", f"{metrics.get('zeta_post_bridge', 0):.4f}")
+    csn = metrics.get("cross_sample_null")
+    if isinstance(csn, dict):
+        table.add_row("ζ null gap", f"{csn.get('gap', 0):.4f}")
+        z = csn.get("z_score", 0.0)
+        table.add_row("ζ null z-score", "inf" if z == float("inf") else f"{z:.2f}")
     table.add_row("Mode", str(metrics.get("mode", "active")))
     table.add_row("Spectral Gap", f"{metrics.get('spectral_gap', 0):.6f}")
     table.add_row("Flux ε", f"{metrics.get('flux_epsilon', 0):.2e}")
@@ -85,10 +92,7 @@ class HeartbeatDashboard:
         partner_metrics: Optional[dict] = None
         if hasattr(self.wrapper.bridge, "dual_link") and self.wrapper.bridge.dual_link is not None:
             partner_metrics = {
-                "manifold_coherence_zeta": self.wrapper.bridge.bell_history[-1]
-                if self.wrapper.bridge.bell_history
-                else 0.0,
-                "bell_correlation": self.wrapper.bridge.bell_history[-1]
+                "zeta_raw": self.wrapper.bridge.bell_history[-1]
                 if self.wrapper.bridge.bell_history
                 else 0.0,
                 "spectral_gap": 0.0,
