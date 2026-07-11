@@ -62,7 +62,7 @@ Evidence tiers:
 
 ## What it does
 
-- Attach forward-pass hooks to any Hugging Face `AutoModelForCausalLM` and measure cross-layer alignment (Manifold Coherence zeta) between a source and sink layer.
+- Attach forward-pass hooks to any Hugging Face `AutoModelForCausalLM` and measure cross-layer alignment (a cross-layer cosine, "zeta") between a source and sink layer.
 - Run in **passive mode** (hooks capture metrics only, no tensor mutation) or **active mode** (LoRA-adapted bridge bias injection, flux governor, mirror feedback).
 - Coordinate two model instances over ZeroMQ for distributed inference with Byzantine fault tolerance (`--dual`).
 - Auto-detect hardware (CPU, laptop GPU, prosumer GPU, server GPU) and select precision class (FP32, BF16, INT4) accordingly.
@@ -233,58 +233,60 @@ between hidden representations at different layers of a transformer.
 ============================================================
 
 [Node] Metrics after generation:
-  manifold_coherence_zeta: 0.9312
+  mode: passive
+  zeta_raw: 0.7912                # pre/no-intervention cross-layer cosine
   spectral_gap: 0.000042
   flux_epsilon: 1.00e-03
   flux_kicks_total: 0
-  mode: passive
   step: 34
+  cross_sample_null: {'null_mean': 0.558, 'null_std': 0.063, 'gap': 0.233, 'z_score': 3.67}
 
-[Node] Session complete. 3.1.1-Singularity
+[Node] Session complete. 3.1.7
 ```
+
+`zeta_raw` is a cross-layer cosine (see the metric note below); on real
+transformers it sits near 1.0 regardless of input due to representational
+anisotropy, so **the `cross_sample_null` gap / z-score is the only meaningful
+signal** — it measures how much more the sink aligns with *this* input's source
+than with unrelated inputs' sinks. In active mode an additional
+`zeta_post_bridge` is reported (the post-intervention cosine).
 
 ---
 
 ## Benchmarks
 
-Four benchmark harnesses are included. Each produces JSON output with per-sample metrics.
+### Real evaluation — GSM8K
 
-### GSM8K (math reasoning)
-
-```bash
-python -m benchmarks.gsm8k --mode passive --seed 42 --output passive.json
-python -m benchmarks.gsm8k --mode active  --seed 42 --output active.json
-```
-
-### HumanEval+ (code generation)
+`benchmarks/real_gsm8k.py` is the actual evaluation: it loads GSM8K, generates
+answers with a real model, and **grades each problem by numeric extraction of
+the final answer**. Every recorded number is measured — there is no synthetic
+accuracy, no `time.sleep` latency, and no permutation test.
 
 ```bash
-python -m benchmarks.humaneval_plus --mode passive --seed 42 --output passive.json
-python -m benchmarks.humaneval_plus --mode active  --seed 42 --output active.json
+python -m benchmarks.real_gsm8k --n 100 --model gpt2 --mode passive --seed 42
 ```
 
-### Agent Instruct (instruction following)
+Modes: `baseline` (bare model, accuracy only), `passive` (capture-only hooks +
+honest metrics), `active` (full bridge intervention). Output is written to
+`results/runs/<date>_<sha>_<env>/gsm8k_real.json` with a `manifest.json`
+(git SHA, pip freeze, device, seed) beside it. Per problem it records:
+`correct` (bool), `zeta_raw`, `cross_sample_null` (`null_mean`/`null_std`/
+`gap`/`z_score`, controls = other problems' sink activations), `spectral_gap`,
+measured `latency_ms`, and token counts.
+
+### Pipeline demos (NOT evaluations)
+
+`benchmarks/pipeline_demos/` contains scripts that push **synthetic** tensors
+through the metric plumbing to illustrate the column/JSON layout. They print a
+`PIPELINE DEMO — synthetic tensors, not an evaluation.` banner and emit no
+accuracy. Do not read anything into their numbers.
 
 ```bash
-python -m benchmarks.agent_instruct --mode passive --seed 42 --output passive.json
-python -m benchmarks.agent_instruct --mode active  --seed 42 --output active.json
+python -m benchmarks.pipeline_demos.gsm8k --n-problems 5 --seed 42
 ```
 
-### Adversarial Safety
-
-```bash
-python -m benchmarks.adversarial_safety --mode passive --seed 42 --output passive.json
-python -m benchmarks.adversarial_safety --mode active  --seed 42 --output active.json
-```
-
-### Benchmark output fields
-
-| Field | Description |
-| :---- | :---------- |
-| `zeta` | Manifold Coherence zeta -- flattened cosine similarity between source and sink layer activations. Range: [-1, 1]. |
-| `baseline_cosine` | Cosine similarity computed on mean-pooled activations. A simpler baseline for comparison. |
-| `permutation_p` | p-value from a permutation test (null hypothesis: observed zeta is no different from random permutations). Lower values indicate the alignment is unlikely to be noise. |
-| `latency_ms` | Wall-clock latency per sample in milliseconds. |
+Demo columns: `zeta` (cross-layer cosine), `baseline_cosine` (mean-pooled
+cosine), `latency_ms` (measured).
 | `accuracy` | Task-specific accuracy (exact match for GSM8K, pass@1 for HumanEval+, etc.). |
 
 Note: the current benchmark harnesses use synthetic tensors to demonstrate the metric pipeline. Full evaluation requires a dataset and a loaded model.
@@ -307,28 +309,42 @@ labs/        Experimental and unstable. Mirror, flux, semantic lock
              wrappers, topology metrics (spectral gap, Betti-0,
              activation entropy). May change or be removed.
 
-benchmarks/  Evaluation harnesses with shared metric helpers.
-             GSM8K, HumanEval+, Agent Instruct, Adversarial Safety.
+benchmarks/  real_gsm8k.py (real graded eval) + pipeline_demos/
+             (synthetic-tensor metric plumbing, not evaluations).
 
 tests/       pytest suite covering core modules.
 ```
 
 ---
 
-## Manifold Coherence zeta
+## The zeta metric (cross-layer cosine)
 
-The primary metric is **Manifold Coherence zeta** -- the cosine similarity between the flattened hidden states of two transformer layers (source and sink):
+The zeta value is a **cross-layer cosine**: the cosine similarity between the
+flattened hidden states of two transformer layers (source and sink):
 
 $$
 \zeta = \frac{\operatorname{vec}(H_{\text{source}}) \cdot \operatorname{vec}(H_{\text{sink}})}
              {\|\operatorname{vec}(H_{\text{source}})\| \;\|\operatorname{vec}(H_{\text{sink}})\|}
 $$
 
-In plain terms: zeta measures how similar the internal representations are at two different depths of the model. A value near 1.0 means the layers are highly aligned; a value near 0.0 means they are largely independent.
+**Read the raw value with care.** On real transformers, hidden states are
+strongly anisotropic (they occupy a narrow cone), so this cosine sits near
+**~0.99 for essentially any input** — a high `zeta_raw` is a property of the
+representation geometry, not evidence of input-specific structure.
 
-A permutation test (`permutation_test_zeta`) is included to evaluate whether an observed zeta value is statistically significant compared to random permutations.
+**The meaningful signal is the cross-sample null gap.** `cross_sample_null`
+compares ζ(source, sink) for the *same* input against the distribution of
+ζ(source, sink′) for *unrelated* inputs' sink activations. The `gap`
+(matched − null_mean) and `z_score` tell you whether the alignment is
+input-specific; the standalone `zeta_raw` does not. The older
+`permutation_test_zeta` is deprecated for exactly this reason — permuting a
+flattened high-dimensional vector barely moves the cosine, so its null is
+near-degenerate.
 
-**Disclaimer:** zeta is a cosine-similarity proxy for cross-layer alignment. It is not a measure of entanglement, consciousness, or any physical phenomenon. Treat it as an empirical diagnostic whose relationship to model quality is under investigation.
+**Disclaimer:** zeta is a cosine-similarity proxy for cross-layer alignment. It
+is not a measure of entanglement, consciousness, or any physical phenomenon.
+Treat it as an empirical diagnostic whose relationship to model quality is
+under investigation.
 
 ---
 
@@ -369,7 +385,7 @@ unitarity-lab/
   core/                    Production runtime modules
     universal_hook.py      HF model wrapper (passive/active)
     bridge.py              Cross-layer hook + LoRA + flux
-    metrics.py             zeta, baseline cosine, permutation test
+    metrics.py             zeta (cross-layer cosine), baseline cosine, cross-sample null
     dashboard.py           Rich terminal dashboard
     dual_link.py           ZMQ inter-model bridge
     gue_loss.py            GUE spectral rigidity loss
@@ -411,5 +427,5 @@ MIT. See [LICENSE](LICENSE).
 - Getting started guide
 - Benchmark guide (running, interpreting results, adding new harnesses)
 - Distributed mode guide (dual-node setup, tier policing, ChronosLock)
-- Metric reference (zeta, baseline cosine, permutation test, spectral gap, GUE loss)
+- Metric reference (zeta cross-layer cosine, baseline cosine, cross-sample null, spectral gap, GUE loss)
 - FAQ

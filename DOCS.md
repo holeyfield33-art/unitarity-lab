@@ -108,8 +108,12 @@ with torch.no_grad():
     wrapper(**inputs)
 
 metrics = wrapper.get_metrics()
-print(f"ζ (manifold coherence) = {metrics['manifold_coherence_zeta']:.6f}")
-print(f"Spectral gap           = {metrics['spectral_gap']:.6f}")
+print(f"ζ raw (cross-layer cosine) = {metrics['zeta_raw']:.6f}")
+print(f"Spectral gap               = {metrics['spectral_gap']:.6f}")
+# The meaningful signal is the cross-sample null gap (once >=3 controls seen):
+if "cross_sample_null" in metrics:
+    print(f"ζ null gap / z = {metrics['cross_sample_null']['gap']:.4f} "
+          f"/ {metrics['cross_sample_null']['z_score']:.2f}")
 ```
 
 ### Active Mode (full bridge intervention)
@@ -120,7 +124,9 @@ wrapper = UniversalHookWrapper(model, config=model.config, mode="active")
 with torch.no_grad():
     wrapper(**inputs)
 
-print(f"ζ = {wrapper.bridge.bell_correlation:.6f}")
+m = wrapper.get_metrics()
+print(f"ζ raw          = {m['zeta_raw']:.6f}")
+print(f"ζ post-bridge  = {m['zeta_post_bridge']:.6f}")  # active mode only
 print(f"Active heads: {int(wrapper.head_mask.sum())}/{wrapper.num_heads}")
 ```
 
@@ -326,10 +332,11 @@ wrapper(*args, **kwargs) → model output
 
 # Collect all bridge/flux/mirror metrics
 wrapper.get_metrics() → Dict[str, object]
-# Returns: {mode, manifold_coherence_zeta, bell_correlation, spectral_gap,
-#           flux_epsilon, flux_kicks_total, flux_stagnation, bridge_enabled,
-#           active_heads, total_heads, step, mirror_depth, mirror_quarantined,
-#           mirror_accusations}
+# Returns: {mode, zeta_raw, spectral_gap, flux_epsilon, flux_kicks_total,
+#           flux_stagnation, bridge_enabled, active_heads, total_heads, step,
+#           mirror_depth, mirror_quarantined, mirror_accusations,
+#           zeta_post_bridge (active mode only),
+#           cross_sample_null={null_mean,null_std,gap,z_score} (>=3 controls)}
 
 # VRAM usage via pynvml
 wrapper.get_vram_usage() → Tuple[int, int]  # (used_MiB, total_MiB)
