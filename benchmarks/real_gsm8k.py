@@ -204,7 +204,10 @@ def main() -> None:
         records.append(rec)
 
     # --- Cross-sample null: matched (source_i, sink_i) vs (source_i, sink_j!=i) ---
-    from unitarity_labs.core.metrics import cross_sample_null_zeta
+    # HONESTY-1: uses the length-matched null. The old padded null deflated
+    # null_std (padding caps cosine at ||truncated||/||full||) and inflated
+    # z_score; every pair below is compared at a common truncated length.
+    from unitarity_labs.core.metrics import length_matched_null_zeta
 
     for i, rec in enumerate(records):
         rec["cross_sample_null"] = None
@@ -213,12 +216,14 @@ def main() -> None:
         controls = [sinks[j] for j in range(len(sinks)) if j != i and sinks[j] is not None]
         if len(controls) < 3:
             continue
-        csn = cross_sample_null_zeta(sources[i], sinks[i], controls)
+        csn = length_matched_null_zeta(sources[i], sinks[i], controls)
         rec["cross_sample_null"] = {
             "null_mean": csn["null_mean"],
             "null_std": csn["null_std"],
             "gap": csn["gap"],
             "z_score": csn["z_score"],
+            "matched_len_tokens": csn["matched_len_tokens"],
+            "length_matched": True,
         }
 
     accuracy = sum(1 for r in records if r["correct"]) / max(len(records), 1)

@@ -213,6 +213,20 @@ def cross_sample_null_zeta(
     if not control_sinks:
         raise ValueError("control_sinks must be non-empty")
 
+    # HONESTY-1: when control sinks have a different number of elements than
+    # the matched sink, manifold_coherence_zeta zero-pads the shorter tensor.
+    # Padding scales cosine toward 0 (bounded by sqrt(len_short/len_long)),
+    # so the null distribution is deflated and gap / z_score are inflated.
+    # Use length_matched_null_zeta for any publicly reported number.
+    if any(cs.numel() != sink.numel() for cs in control_sinks):
+        warnings.warn(
+            "cross_sample_null_zeta: control sinks differ in length from the "
+            "matched sink; zero-padding deflates the null and inflates "
+            "z_score (HONESTY-1). Use length_matched_null_zeta instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+
     matched = manifold_coherence_zeta(source, sink)
     null_scores = [manifold_coherence_zeta(source, cs) for cs in control_sinks]
 
@@ -229,4 +243,74 @@ def cross_sample_null_zeta(
         "gap": gap,
         "z_score": z_score,
         "n_controls": len(null_scores),
+    }
+
+
+def length_matched_null_zeta(
+    source: torch.Tensor,
+    sink: torch.Tensor,
+    control_sinks: List[torch.Tensor],
+    seq_dim: int = -2,
+) -> dict:
+    """Length-matched significance test for zeta (HONESTY-1 fix).
+
+    Identical in spirit to :func:`cross_sample_null_zeta`, but removes the
+    length confound: all sinks (matched AND controls) are truncated along
+    ``seq_dim`` to the shortest sequence length present, and the source is
+    truncated to the same length. Every cosine in the comparison is then
+    computed between equal-length tensors -- zero-padding never occurs, so
+    the null is not artificially deflated.
+
+    Assumes activations shaped ``(..., seq, hidden)`` (the standard
+    hidden-state layout). All tensors must share the same hidden dimension.
+
+    Returns the same keys as ``cross_sample_null_zeta`` plus:
+        matched_len_tokens : int  -- common sequence length used
+        length_matched     : bool -- always True (marker for manifests)
+    """
+    if not control_sinks:
+        raise ValueError("control_sinks must be non-empty")
+
+    hidden = sink.shape[-1]
+    for t in [source] + list(control_sinks):
+        if t.shape[-1] != hidden:
+            raise ValueError(
+                "length_matched_null_zeta requires a common hidden dimension: "
+                f"got {t.shape[-1]} vs {hidden}"
+            )
+
+    def _seq_len(t: torch.Tensor) -> int:
+        return t.shape[seq_dim]
+
+    common_len = min(
+        [_seq_len(source), _seq_len(sink)] + [_seq_len(cs) for cs in control_sinks]
+    )
+    if common_len < 1:
+        raise ValueError("all tensors must have at least one token")
+
+    def _truncate(t: torch.Tensor) -> torch.Tensor:
+        return t.narrow(seq_dim, 0, common_len)
+
+    src_t = _truncate(source)
+    sink_t = _truncate(sink)
+    controls_t = [_truncate(cs) for cs in control_sinks]
+
+    matched = manifold_coherence_zeta(src_t, sink_t)
+    null_scores = [manifold_coherence_zeta(src_t, cs) for cs in controls_t]
+
+    null_tensor = torch.tensor(null_scores, dtype=torch.float32)
+    null_mean = null_tensor.mean().item()
+    null_std = null_tensor.std().item() if len(null_scores) > 1 else 0.0
+    gap = matched - null_mean
+    z_score = (gap / null_std) if null_std > 0.0 else float("inf")
+
+    return {
+        "matched": matched,
+        "null_mean": null_mean,
+        "null_std": null_std,
+        "gap": gap,
+        "z_score": z_score,
+        "n_controls": len(null_scores),
+        "matched_len_tokens": common_len,
+        "length_matched": True,
     }
