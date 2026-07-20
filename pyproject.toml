@@ -28,6 +28,7 @@ dependencies = [
     "scipy>=1.10",
     "rich>=13.0",
     "safetensors>=0.4",
+    "var @ git+https://github.com/holeyfield33-art/VAR@31234551e524249a5e81453ec851c98ec8836fb7",
 ]
 requires-python = ">=3.9"
 
