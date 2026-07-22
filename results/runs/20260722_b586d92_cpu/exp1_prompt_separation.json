@@ -1,0 +1,719 @@
+{
+  "model": "gpt2",
+  "mode": "passive",
+  "seed": 42,
+  "categories": [
+    "math",
+    "narrative",
+    "factual"
+  ],
+  "prompts_per_category": 8,
+  "n": 24,
+  "summary": {
+    "n_prompts": 24,
+    "n_categories": 3,
+    "n_within_computed": 24,
+    "n_cross_computed": 24,
+    "mean_gap_within_category": 0.239115,
+    "mean_gap_cross_category": 0.256994,
+    "separation": -0.017879
+  },
+  "results": [
+    {
+      "prompt_id": 0,
+      "category": "math",
+      "prompt": "Question: What is 12 + 37?\nAnswer:",
+      "completion": " 12 + 37 is the number of the number of the number of the number of the number of the number of the number of the number of the number of the",
+      "latency_ms": 1032.63,
+      "prompt_tokens": 11,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6724717020988464,
+      "spectral_gap": 0.0009765625,
+      "null_within_category": {
+        "null_mean": 0.4935498833656311,
+        "null_std": 0.06033486872911453,
+        "gap": 0.17892181873321533,
+        "z_score": 2.9654795394769256,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4449146091938019,
+        "null_std": 0.059730157256126404,
+        "gap": 0.22755709290504456,
+        "z_score": 3.8097521144849233,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 1,
+      "category": "math",
+      "prompt": "Question: If a train travels 60 miles in 2 hours, what is its average speed?\nAnswer:",
+      "completion": " It depends on the speed of the train. The average speed of a train is about 1.5 miles per hour.\nThe average speed of a train is",
+      "latency_ms": 999.72,
+      "prompt_tokens": 21,
+      "completion_tokens": 32,
+      "zeta_raw": 0.7241882085800171,
+      "spectral_gap": 0.00634765625,
+      "null_within_category": {
+        "null_mean": 0.414399653673172,
+        "null_std": 0.03608892112970352,
+        "gap": 0.3097885549068451,
+        "z_score": 8.584034800970235,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4147789478302002,
+        "null_std": 0.07765969634056091,
+        "gap": 0.3094092607498169,
+        "z_score": 3.9841677901103947,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 2,
+      "category": "math",
+      "prompt": "Question: What is the derivative of x^2?\nAnswer:",
+      "completion": " The derivative of x^2 is the derivative of x^2.\nAnswer: The derivative of x^2 is the derivative of x^2.\n",
+      "latency_ms": 1047.95,
+      "prompt_tokens": 14,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6841543316841125,
+      "spectral_gap": 0.00537109375,
+      "null_within_category": {
+        "null_mean": 0.5020488500595093,
+        "null_std": 0.07590997219085693,
+        "gap": 0.18210548162460327,
+        "z_score": 2.398966517425983,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4372676610946655,
+        "null_std": 0.06889576464891434,
+        "gap": 0.24688667058944702,
+        "z_score": 3.5834811014516763,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 3,
+      "category": "math",
+      "prompt": "Question: Solve for x: 2x + 5 = 17.\nAnswer:",
+      "completion": " Solve for x: 2x + 5 = 17.\nAnswer: Solve for x: 2x + 5 = 17.\nAnswer: Solve",
+      "latency_ms": 985.02,
+      "prompt_tokens": 17,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6371769309043884,
+      "spectral_gap": 0.0185546875,
+      "null_within_category": {
+        "null_mean": 0.4231358468532562,
+        "null_std": 0.02675989270210266,
+        "gap": 0.2140410840511322,
+        "z_score": 7.9985778132179846,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.3898451328277588,
+        "null_std": 0.03995140269398689,
+        "gap": 0.24733179807662964,
+        "z_score": 6.190816376864176,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 4,
+      "category": "math",
+      "prompt": "Question: What is 15% of 200?\nAnswer:",
+      "completion": " The number of people who are in the top 10% of the population.\nSource: http://www.census.gov/population/population-data",
+      "latency_ms": 1046.53,
+      "prompt_tokens": 12,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6709452867507935,
+      "spectral_gap": 0.0009765625,
+      "null_within_category": {
+        "null_mean": 0.370779424905777,
+        "null_std": 0.05442170426249504,
+        "gap": 0.3001658618450165,
+        "z_score": 5.515554242792744,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.3353329002857208,
+        "null_std": 0.06541403383016586,
+        "gap": 0.33561238646507263,
+        "z_score": 5.130586921705844,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 5,
+      "category": "math",
+      "prompt": "Question: What is the sum of the first 10 positive integers?\nAnswer:",
+      "completion": " The sum of the first 10 positive integers is:\n1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11",
+      "latency_ms": 987.91,
+      "prompt_tokens": 16,
+      "completion_tokens": 32,
+      "zeta_raw": 0.5544397830963135,
+      "spectral_gap": 0.00244140625,
+      "null_within_category": {
+        "null_mean": 0.40006065368652344,
+        "null_std": 0.04668256640434265,
+        "gap": 0.15437912940979004,
+        "z_score": 3.3069974789438503,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.3572229743003845,
+        "null_std": 0.044636521488428116,
+        "gap": 0.19721680879592896,
+        "z_score": 4.4182835539067895,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 6,
+      "category": "math",
+      "prompt": "Question: A rectangle has length 8 and width 3. What is its area?\nAnswer:",
+      "completion": " A rectangle has length 8 and width 3. What is its area?\nAnswer: A rectangle has length 8 and width 3. What is its area?\n",
+      "latency_ms": 967.28,
+      "prompt_tokens": 19,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6551578640937805,
+      "spectral_gap": 0.00390625,
+      "null_within_category": {
+        "null_mean": 0.4464185833930969,
+        "null_std": 0.06316645443439484,
+        "gap": 0.2087392807006836,
+        "z_score": 3.3045907447200764,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.40005970001220703,
+        "null_std": 0.0570521354675293,
+        "gap": 0.2550981640815735,
+        "z_score": 4.4713166648557845,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 7,
+      "category": "math",
+      "prompt": "Question: What is 9 squared?\nAnswer:",
+      "completion": " 9 is the number of squares in the world.\nAnswer: 9 is the number of squares in the world.\nAnswer: 9 is the number of squares",
+      "latency_ms": 930.7,
+      "prompt_tokens": 10,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6901533007621765,
+      "spectral_gap": 0.00048828125,
+      "null_within_category": {
+        "null_mean": 0.4918690621852875,
+        "null_std": 0.0599239282310009,
+        "gap": 0.19828423857688904,
+        "z_score": 3.308932582198594,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.45143604278564453,
+        "null_std": 0.07264066487550735,
+        "gap": 0.23871725797653198,
+        "z_score": 3.2862757848603,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 8,
+      "category": "narrative",
+      "prompt": "Once upon a time, in a quiet village by the sea,",
+      "completion": " the people of the village were all gathered together, and the people of the village were all gathered together, and the people of the village were all gathered together,",
+      "latency_ms": 952.2,
+      "prompt_tokens": 13,
+      "completion_tokens": 32,
+      "zeta_raw": 0.7324183583259583,
+      "spectral_gap": 0.001953125,
+      "null_within_category": {
+        "null_mean": 0.43711742758750916,
+        "null_std": 0.05665043741464615,
+        "gap": 0.2953009307384491,
+        "z_score": 5.212685801117986,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.44640979170799255,
+        "null_std": 0.07501153647899628,
+        "gap": 0.2860085666179657,
+        "z_score": 3.812861061685491,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 9,
+      "category": "narrative",
+      "prompt": "The old lighthouse keeper had not seen another soul in months when",
+      "completion": " he was sent to the island. He had been sent to the island by the old lighthouse keeper, who had been sent to the island by the old lighthouse keeper",
+      "latency_ms": 963.09,
+      "prompt_tokens": 12,
+      "completion_tokens": 32,
+      "zeta_raw": 0.737933337688446,
+      "spectral_gap": 0.0029296875,
+      "null_within_category": {
+        "null_mean": 0.3970181941986084,
+        "null_std": 0.03625647351145744,
+        "gap": 0.34091514348983765,
+        "z_score": 9.402876520302083,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.39561644196510315,
+        "null_std": 0.05391383916139603,
+        "gap": 0.3423168957233429,
+        "z_score": 6.349332584136437,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 10,
+      "category": "narrative",
+      "prompt": "She opened the letter with trembling hands and read:",
+      "completion": " \"I am sorry for the pain I have caused you. I am sorry for the pain I have caused you. I am sorry for the pain I have caused",
+      "latency_ms": 995.97,
+      "prompt_tokens": 10,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6475647687911987,
+      "spectral_gap": 0.00341796875,
+      "null_within_category": {
+        "null_mean": 0.40090832114219666,
+        "null_std": 0.03005913831293583,
+        "gap": 0.24665644764900208,
+        "z_score": 8.205705868250204,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.3584515452384949,
+        "null_std": 0.03998176008462906,
+        "gap": 0.28911322355270386,
+        "z_score": 7.231127967871857,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 11,
+      "category": "narrative",
+      "prompt": "Deep in the forest, the children found a door that",
+      "completion": " led to a small room.\n\n\"What's wrong?\"\n\n\"I'm not sure. I'm not sure what's wrong. I'm not",
+      "latency_ms": 957.28,
+      "prompt_tokens": 11,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6739726066589355,
+      "spectral_gap": 0.00048828125,
+      "null_within_category": {
+        "null_mean": 0.45597806572914124,
+        "null_std": 0.045658428221940994,
+        "gap": 0.2179945409297943,
+        "z_score": 4.774464418051032,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.3976200819015503,
+        "null_std": 0.05856373533606529,
+        "gap": 0.27635252475738525,
+        "z_score": 4.718833646309427,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 12,
+      "category": "narrative",
+      "prompt": "The spaceship's engines sputtered as the crew realized",
+      "completion": " that the ship was going to crash into the planet.\n\n\"We're going to have to get out of here,\" said the captain. \"We're",
+      "latency_ms": 1005.28,
+      "prompt_tokens": 10,
+      "completion_tokens": 32,
+      "zeta_raw": 0.708784282207489,
+      "spectral_gap": 0.00537109375,
+      "null_within_category": {
+        "null_mean": 0.5103479623794556,
+        "null_std": 0.06403672695159912,
+        "gap": 0.19843631982803345,
+        "z_score": 3.098789230405507,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4482420086860657,
+        "null_std": 0.07492276281118393,
+        "gap": 0.26054227352142334,
+        "z_score": 3.4774781888119515,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 13,
+      "category": "narrative",
+      "prompt": "He had walked these streets a thousand times, but tonight",
+      "completion": " he was still here. He was still here. He was still here. He was still here. He was still here. He was still here. He was",
+      "latency_ms": 1073.37,
+      "prompt_tokens": 11,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6905084848403931,
+      "spectral_gap": 0.0,
+      "null_within_category": {
+        "null_mean": 0.4289863109588623,
+        "null_std": 0.03841552138328552,
+        "gap": 0.26152217388153076,
+        "z_score": 6.807721578791803,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4165796935558319,
+        "null_std": 0.04974028095602989,
+        "gap": 0.27392879128456116,
+        "z_score": 5.507182227754455,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 14,
+      "category": "narrative",
+      "prompt": "The dragon circled once, then landed beside the",
+      "completion": " dragon.\n\n\"I'm sorry, but I'm not sure if you're ready to go back to the castle.\"\n\n\"I'm not sure",
+      "latency_ms": 968.09,
+      "prompt_tokens": 9,
+      "completion_tokens": 32,
+      "zeta_raw": 0.695273220539093,
+      "spectral_gap": 0.00048828125,
+      "null_within_category": {
+        "null_mean": 0.4404476583003998,
+        "null_std": 0.05839002877473831,
+        "gap": 0.25482556223869324,
+        "z_score": 4.3641965518081784,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.37599533796310425,
+        "null_std": 0.05395089089870453,
+        "gap": 0.31927788257598877,
+        "z_score": 5.917935315942212,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 15,
+      "category": "narrative",
+      "prompt": "In the year the rivers froze early, a stranger arrived in town who",
+      "completion": " had been in the city for a few days. He was a young man, and he was a man of great wealth. He had a large house, and",
+      "latency_ms": 975.12,
+      "prompt_tokens": 14,
+      "completion_tokens": 32,
+      "zeta_raw": 0.7725071310997009,
+      "spectral_gap": 0.0,
+      "null_within_category": {
+        "null_mean": 0.49535515904426575,
+        "null_std": 0.05472410470247269,
+        "gap": 0.2771519720554352,
+        "z_score": 5.064531865112673,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.48975712060928345,
+        "null_std": 0.0867304652929306,
+        "gap": 0.2827500104904175,
+        "z_score": 3.260100237389876,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 16,
+      "category": "factual",
+      "prompt": "Question: What is the capital of France?\nAnswer:",
+      "completion": " The capital of France is the capital of France.\nThe capital of France is the capital of France.\nThe capital of France is the capital of France.",
+      "latency_ms": 1010.42,
+      "prompt_tokens": 12,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6898513436317444,
+      "spectral_gap": 0.001953125,
+      "null_within_category": {
+        "null_mean": 0.3967093825340271,
+        "null_std": 0.056827250868082047,
+        "gap": 0.2931419610977173,
+        "z_score": 5.15847514387442,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.42088958621025085,
+        "null_std": 0.048937227576971054,
+        "gap": 0.26896175742149353,
+        "z_score": 5.496056289630554,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 17,
+      "category": "factual",
+      "prompt": "Question: Who wrote the play Romeo and Juliet?\nAnswer:",
+      "completion": " The play was written by the French playwright, Jean-Jacques Rousseau.\nThe play was written by the French playwright, Jean-Jacques",
+      "latency_ms": 1039.31,
+      "prompt_tokens": 13,
+      "completion_tokens": 32,
+      "zeta_raw": 0.587836503982544,
+      "spectral_gap": 0.001953125,
+      "null_within_category": {
+        "null_mean": 0.24877922236919403,
+        "null_std": 0.04049008712172508,
+        "gap": 0.3390572816133499,
+        "z_score": 8.373834331204185,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.26192140579223633,
+        "null_std": 0.03263399749994278,
+        "gap": 0.3259150981903076,
+        "z_score": 9.986980546617959,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 18,
+      "category": "factual",
+      "prompt": "Question: What is the chemical symbol for gold?\nAnswer:",
+      "completion": " The symbol for gold is the \"golden circle\" (the \"golden circle\"). The symbol for gold is the \"golden circle\" (the \"",
+      "latency_ms": 1006.68,
+      "prompt_tokens": 13,
+      "completion_tokens": 32,
+      "zeta_raw": 0.5984700322151184,
+      "spectral_gap": 0.00244140625,
+      "null_within_category": {
+        "null_mean": 0.37612029910087585,
+        "null_std": 0.056086216121912,
+        "gap": 0.22234973311424255,
+        "z_score": 3.9644274206505794,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.39694637060165405,
+        "null_std": 0.038389015942811966,
+        "gap": 0.20152366161346436,
+        "z_score": 5.24951360862372,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 19,
+      "category": "factual",
+      "prompt": "Question: What year did World War II end?\nAnswer:",
+      "completion": " The year of the war ended in 1945.\nSource: Wikipedia\nSource: Wikipedia\nSource: Wikipedia\nSource: Wikipedia\nSource: Wikipedia\nSource:",
+      "latency_ms": 989.26,
+      "prompt_tokens": 13,
+      "completion_tokens": 32,
+      "zeta_raw": 0.5348908305168152,
+      "spectral_gap": 0.00244140625,
+      "null_within_category": {
+        "null_mean": 0.4240947365760803,
+        "null_std": 0.06969345360994339,
+        "gap": 0.11079609394073486,
+        "z_score": 1.5897632876802539,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4234183430671692,
+        "null_std": 0.042150575667619705,
+        "gap": 0.111472487449646,
+        "z_score": 2.64462550473017,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 20,
+      "category": "factual",
+      "prompt": "Question: What is the largest planet in the solar system?\nAnswer:",
+      "completion": " The largest planet in the solar system is the Sun.\nAnswer: The Sun is the largest planet in the solar system.\nAnswer: The Sun is the",
+      "latency_ms": 1002.99,
+      "prompt_tokens": 15,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6514578461647034,
+      "spectral_gap": 0.0,
+      "null_within_category": {
+        "null_mean": 0.4895544648170471,
+        "null_std": 0.13183371722698212,
+        "gap": 0.16190338134765625,
+        "z_score": 1.2280878120799876,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.5097880363464355,
+        "null_std": 0.0457189567387104,
+        "gap": 0.14166980981826782,
+        "z_score": 3.0987104676934916,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 21,
+      "category": "factual",
+      "prompt": "Question: How many continents are there on Earth?\nAnswer:",
+      "completion": " The Earth is about 1.5 billion years old.\nAnswer: The Earth is about 1.5 billion years old.\nAnswer: The Earth is about",
+      "latency_ms": 1006.83,
+      "prompt_tokens": 13,
+      "completion_tokens": 32,
+      "zeta_raw": 0.6834192276000977,
+      "spectral_gap": 0.00048828125,
+      "null_within_category": {
+        "null_mean": 0.4793674349784851,
+        "null_std": 0.11361715197563171,
+        "gap": 0.20405179262161255,
+        "z_score": 1.7959594046625724,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.507622480392456,
+        "null_std": 0.03990114852786064,
+        "gap": 0.1757967472076416,
+        "z_score": 4.405806692127998,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 22,
+      "category": "factual",
+      "prompt": "Question: What language is primarily spoken in Brazil?\nAnswer:",
+      "completion": " The language spoken in Brazil is Brazilian.\nQuestion: What language is primarily spoken in the United States?\nAnswer: The language spoken in the United States is",
+      "latency_ms": 1063.95,
+      "prompt_tokens": 13,
+      "completion_tokens": 32,
+      "zeta_raw": 0.66116863489151,
+      "spectral_gap": 0.00146484375,
+      "null_within_category": {
+        "null_mean": 0.42065590620040894,
+        "null_std": 0.0962183028459549,
+        "gap": 0.24051272869110107,
+        "z_score": 2.4996567345005136,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.42349377274513245,
+        "null_std": 0.04875727742910385,
+        "gap": 0.23767486214637756,
+        "z_score": 4.874654096344321,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 23,
+      "category": "factual",
+      "prompt": "Question: What is the boiling point of water in Celsius?\nAnswer:",
+      "completion": " The boiling point of water is about 1.5 degrees Celsius.\nThe boiling point of water is about 1.5 degrees Celsius.\nThe boiling point of",
+      "latency_ms": 1056.41,
+      "prompt_tokens": 15,
+      "completion_tokens": 32,
+      "zeta_raw": 0.7174913287162781,
+      "spectral_gap": 0.001953125,
+      "null_within_category": {
+        "null_mean": 0.38976165652275085,
+        "null_std": 0.07489036023616791,
+        "gap": 0.3277296721935272,
+        "z_score": 4.376126261911769,
+        "n_controls": 7,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.4007699191570282,
+        "null_std": 0.058565445244312286,
+        "gap": 0.3167214095592499,
+        "z_score": 5.407991149696057,
+        "n_controls": 16,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    }
+  ]
+}
