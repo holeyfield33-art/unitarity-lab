@@ -19,6 +19,3 @@ merged_model/
 mlc_weights/
 lora_checkpoints/
 libs/*.wasm
-
-# Real evaluation run artifacts (reproducible; manifest embeds pip freeze)
-results/runs/
