@@ -30,13 +30,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import time
 from datetime import date
 from pathlib import Path
 from typing import List, Optional
 
 import torch
+
+from benchmarks._harness import git_sha, pip_freeze, device_name, env_tag
 
 
 # ----------------------------------------------------------------------
@@ -61,38 +62,6 @@ def _gold_number(answer: str) -> Optional[float]:
     if "####" in answer:
         return _last_number(answer.split("####")[-1])
     return _last_number(answer)
-
-
-# ----------------------------------------------------------------------
-# Environment / manifest
-# ----------------------------------------------------------------------
-def _git_sha() -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], text=True
-        ).strip()
-    except Exception:
-        return "nogit"
-
-
-def _pip_freeze() -> List[str]:
-    try:
-        out = subprocess.check_output(
-            ["python", "-m", "pip", "freeze"], text=True
-        )
-        return out.strip().splitlines()
-    except Exception:
-        return []
-
-
-def _device_name() -> str:
-    if torch.cuda.is_available():
-        return torch.cuda.get_device_name(0)
-    return "cpu"
-
-
-def _env_tag() -> str:
-    return "cuda" if torch.cuda.is_available() else "cpu"
 
 
 # ----------------------------------------------------------------------
@@ -238,8 +207,8 @@ def main() -> None:
     }
 
     # --- Write results + manifest ---
-    sha = _git_sha()
-    run_dir = Path("results/runs") / f"{date.today():%Y%m%d}_{sha}_{_env_tag()}"
+    sha = git_sha()
+    run_dir = Path("results/runs") / f"{date.today():%Y%m%d}_{sha}_{env_tag()}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
     (run_dir / "gsm8k_real.json").write_text(
@@ -247,12 +216,12 @@ def main() -> None:
     )
     manifest = {
         "git_sha": sha,
-        "device": _device_name(),
+        "device": device_name(),
         "seed": args.seed,
         "model": args.model,
         "mode": args.mode,
         "n": len(records),
-        "pip_freeze": _pip_freeze(),
+        "pip_freeze": pip_freeze(),
     }
     (run_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"

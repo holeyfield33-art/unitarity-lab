@@ -48,8 +48,8 @@ unitarity-start = "unitarity_labs.cli:main"
 unitarity-validate = "unitarity_labs.cli:validate_text_main"
 
 [tool.setuptools.packages.find]
-include = ["unitarity_labs", "unitarity_labs.*"]
-exclude = ["tests", "tests.*", "benchmarks", "benchmarks.*"]
+include = ["unitarity_labs", "unitarity_labs.*", "benchmarks", "benchmarks.*"]
+exclude = ["tests", "tests.*"]
 
 [tool.pytest.ini_options]
 markers = [

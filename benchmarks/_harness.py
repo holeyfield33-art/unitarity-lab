@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import time
 from pathlib import Path
 from typing import Any, Dict, List
@@ -22,6 +23,42 @@ from typing import Any, Dict, List
 import torch
 
 from unitarity_labs.core.metrics import manifold_coherence_zeta, baseline_cosine_meanpool
+
+
+# ----------------------------------------------------------------------
+# Environment / manifest helpers
+# ----------------------------------------------------------------------
+def git_sha() -> str:
+    """Short git SHA of the commit the run was produced from."""
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], text=True
+        ).strip()
+    except Exception:
+        return "nogit"
+
+
+def pip_freeze() -> List[str]:
+    """Full ``pip freeze`` output, for embedding in a run manifest."""
+    try:
+        out = subprocess.check_output(
+            ["python", "-m", "pip", "freeze"], text=True
+        )
+        return out.strip().splitlines()
+    except Exception:
+        return []
+
+
+def device_name() -> str:
+    """Human-readable device name (CUDA device or ``"cpu"``)."""
+    if torch.cuda.is_available():
+        return torch.cuda.get_device_name(0)
+    return "cpu"
+
+
+def env_tag() -> str:
+    """``"cuda"`` or ``"cpu"``, used in the run directory name."""
+    return "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def make_parser(description: str) -> argparse.ArgumentParser:

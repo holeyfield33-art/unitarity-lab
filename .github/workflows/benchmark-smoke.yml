@@ -1,0 +1,41 @@
+name: Benchmark Smoke Test
+
+'on':
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  exp1-prompt-separation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install transformers numpy scipy rich safetensors
+
+      - name: Run exp1_prompt_separation (tiny CPU config)
+        run: |
+          python -m benchmarks.exp1_prompt_separation \
+            --model gpt2 \
+            --mode passive \
+            --prompts-per-category 2 \
+            --max-new-tokens 2 \
+            --min-controls 1
+
+      - name: Verify run artifacts were produced
+        run: |
+          run_dir=$(ls -d results/runs/*/ | tail -1)
+          test -f "${run_dir}exp1_prompt_separation.json"
+          test -f "${run_dir}manifest.json"
+          echo "Verified run artifacts in ${run_dir}"
