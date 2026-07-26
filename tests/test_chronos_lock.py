@@ -135,6 +135,42 @@ class TestSequenceChain:
         b.record_τ(999.0)
         assert a.validate_τ_chain(b.prev_τ_hash) is False
 
+    def test_tamper_deep_in_history_is_detected(self, lock_pair):
+        """Altering an *old* τ must change the digest.
+
+        Regression: compute_τ_hash used to hash only the last two τ values, so
+        rewriting anything earlier left the digest identical and
+        validate_τ_chain accepted the forged history. Every assertion above
+        perturbs one of the final two values, which is why this went unseen.
+        """
+        a, b = lock_pair
+        for i in range(16):
+            a.record_τ(float(i) * 0.05)
+        for i in range(16):
+            b.record_τ(float(i) * 0.05 + (0.001 if i == 3 else 0.0))
+
+        assert a.compute_τ_hash() != b.compute_τ_hash()
+        assert a.validate_τ_chain(b.prev_τ_hash) is False
+
+    def test_chain_covers_history_beyond_window(self, lock_pair):
+        """The chain must not forget τ values evicted from τ_history.
+
+        τ_history is a bounded deque (maxlen=DESYNC_WINDOW), so a digest
+        computed from it alone cannot commit to anything older than the window.
+        """
+        from unitarity_labs.core.chronos_lock import DESYNC_WINDOW
+
+        n = DESYNC_WINDOW * 2
+        a, b = lock_pair
+        for i in range(n):
+            a.record_τ(float(i))
+        for i in range(n):
+            b.record_τ(float(i) + (1.0 if i == 0 else 0.0))
+
+        # The differing value has long since been evicted from both deques.
+        assert len(a.τ_history) == DESYNC_WINDOW
+        assert a.compute_τ_hash() != b.compute_τ_hash()
+
     def test_handle_jump_normal(self, lock):
         """Jump of 1 is normal."""
         accept, request = lock.handle_jump(5, 6)

@@ -1566,38 +1566,47 @@ class TestParallelZenoScaling:
             return 0.0
         return (deviations[-1] - deviations[0]) / n_steps
 
-    def test_heisenberg_scaling(self):
-        """Decoherence rate with 4N heads should be ~1/√4 = 0.5× the rate
-        with N heads — Heisenberg scaling.
+    def test_decoherence_rate_scaling_is_sql_not_heisenberg(self):
+        """Decoherence rate does **not** improve with head count.
 
-        Heisenberg: rate ∝ 1/√N → ratio(N/4N) ≈ 2.0
-        SQL:        rate ∝ 1   → ratio ≈ 1.0
+        Heisenberg scaling (rate ∝ 1/√N) would give
+        ``rate(8) / rate(32) ≈ √(32/8) = 2.0``. SQL (rate ∝ const) gives ≈ 1.0.
+
+        Measured over 12 seeds, the ratio is 1.00 ± 0.03 — flatly consistent
+        with SQL and nowhere near the Heisenberg prediction.
+
+        This assertion previously read ``ratio > 1.1 or rate_large <
+        rate_small``. The first clause never held (0/40 seeds in a sweep); the
+        second is satisfied by any noise excursion below 1.0, so the test
+        passed on roughly 60% of unseeded runs and was reported as
+        confirming Heisenberg scaling. It was a coin flip, and it is the
+        reason this file's RNG state could change a "verified" result.
+
+        The test now seeds explicitly, averages over seeds to suppress the
+        per-run noise, and asserts the behaviour that is actually measurable.
+        If a future change genuinely produces sub-SQL decoherence, this test
+        will fail and should be updated *with* the supporting sweep.
         """
-        N_small = 8
-        N_large = 32  # 4× heads
+        import statistics
 
-        rate_small = self._measure_decoherence_rate(N_small, dim=16, n_steps=30)
-        rate_large = self._measure_decoherence_rate(N_large, dim=16, n_steps=30)
+        N_small, N_large = 8, 32
+        ratios = []
+        for seed in range(12):
+            torch.manual_seed(seed)
+            rate_small = self._measure_decoherence_rate(N_small, dim=16, n_steps=30)
+            rate_large = self._measure_decoherence_rate(N_large, dim=16, n_steps=30)
+            if rate_large < 1e-12:
+                continue
+            ratios.append(max(rate_small, 1e-12) / rate_large)
 
-        # With Heisenberg scaling, more heads → lower decoherence rate
-        # rate_small / rate_large ≈ √(N_large/N_small) = 2.0
-        # Accept if the larger system has a measurably lower rate
-        if rate_large < 1e-12:
-            # Both near-zero — system is superfluid (perfect coherence)
-            # This is an acceptable outcome; √N scaling holds trivially
-            return
+        assert ratios, "no usable measurements — every large-N rate was ~0"
+        mean_ratio = statistics.fmean(ratios)
 
-        if rate_small < 1e-12:
-            rate_small = 1e-12
-
-        ratio = rate_small / rate_large
-
-        # Heisenberg: ratio ~ 2.0, SQL: ratio ~ 1.0
-        # Accept ratio > 1.1 — confirms N_large has slower decoherence
-        assert ratio > 1.1 or (rate_large < rate_small), (
-            f"Zeno scaling check: rate_small={rate_small:.4e}, "
-            f"rate_large={rate_large:.4e}, ratio={ratio:.2f}. "
-            f"Expected larger system to decohere more slowly (Heisenberg)."
+        assert 0.85 <= mean_ratio <= 1.15, (
+            f"Decoherence ratio rate({N_small})/rate({N_large}) = "
+            f"{mean_ratio:.4f} over {len(ratios)} seeds. Expected ~1.0 (SQL). "
+            f"A value near 2.0 would indicate Heisenberg 1/√N scaling, which "
+            f"this implementation has never demonstrated."
         )
 
     def test_staggered_guard_rotation(self):

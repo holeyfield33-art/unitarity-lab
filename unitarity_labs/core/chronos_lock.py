@@ -75,6 +75,11 @@ class ChronosLock:
         self.seq_pos: int = 0
         self.τ_history: deque[float] = deque(maxlen=DESYNC_WINDOW)
         self.prev_τ_hash: Optional[str] = None
+        # Running hash-chain head over every τ ever recorded. Kept separately
+        # from τ_history because that deque evicts past DESYNC_WINDOW, and a
+        # chain that forgets its own history is not tamper-evident.
+        self._τ_chain_head: Optional[str] = None
+        self._τ_count: int = 0
 
         # Cumulative desync
         self.Δτ_buffer: deque[float] = deque(maxlen=DESYNC_WINDOW)
@@ -140,17 +145,33 @@ class ChronosLock:
     # ------------------------------------------------------------------
 
     def record_τ(self, τ_value: float) -> None:
-        """Record a new τ_sync value and update the chain hash."""
+        """Record a new τ_sync value and extend the chain hash."""
         self.τ_history.append(τ_value)
         self.seq_pos += 1
+        self._τ_count += 1
+        # H_t = SHA256(H_{t-1} ‖ τ_t) — each digest commits to the entire
+        # preceding history, so altering any past τ changes every hash after
+        # it. Genesis (H_0) is the empty string.
+        digest = hashlib.sha256()
+        digest.update((self._τ_chain_head or "").encode("ascii"))
+        digest.update(np.float64(τ_value).tobytes())
+        self._τ_chain_head = digest.hexdigest()
         self.prev_τ_hash = self.compute_τ_hash()
 
     def compute_τ_hash(self) -> Optional[str]:
-        """SHA-256 hash of last two τ values for chain validation."""
-        if len(self.τ_history) < 2:
+        """Head of the SHA-256 τ hash chain, or None before two τ values.
+
+        This commits to *every* τ recorded, not just the most recent ones.
+        A previous implementation hashed only the last two values, which meant
+        tampering with any τ older than two steps left the digest unchanged and
+        :meth:`validate_τ_chain` silently accepted a rewritten history.
+
+        Note this changes the digest on the wire: peers must run matching
+        versions for :meth:`validate_τ_chain` to agree.
+        """
+        if self._τ_count < 2:
             return None
-        data = np.array(list(self.τ_history)[-2:], dtype=np.float64).tobytes()
-        return hashlib.sha256(data).hexdigest()
+        return self._τ_chain_head
 
     def validate_τ_chain(
         self, received_prev_hash: Optional[str],

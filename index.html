@@ -809,7 +809,7 @@
       <p class="muted-note">Three paths from any HuggingFace model to a spectral audit. The notebook is the fastest start.</p>
       <ol class="hf-steps">
         <li>
-          <strong>Load your model in the starter notebook</strong> — Click <em>Launch Gemma 4 Starter Notebook</em> below. The notebook imports any HuggingFace model via <code>AutoModelForCausalLM.from_pretrained("your/model-id")</code>, attaches activation hooks, and computes hidden-state eigenvalues automatically.
+          <strong>Run the audit suite on your model</strong> — Click <em>Launch Audit Suite Notebook</em> below. It installs the package, then runs every check one at a time on a T4, logging each measured value with the seed, device and commit that produced it. Model tiers from 82M to 1.5B parameters are preset to fit a single T4.
         </li>
         <li>
           <strong>Run the spectral measurement</strong> — The notebook computes the GUE r-statistic from eigenvalue spacings of the activation Laplacian. Use the external proxy below (opt-in) to submit text for a remote spectral estimate.
@@ -818,7 +818,7 @@
           <strong>Interpret your numbers</strong> — Use the Foundational Methods card below to interpret your r-statistic. For production-grade hidden-state and eigenvalue analysis, follow the links in the Deeper Analysis section.
         </li>
       </ol>
-      <a href="notebooks/gemma4_starter.ipynb" id="notebook-btn-guide" class="mini-btn notebook-launch-btn" aria-label="Launch Gemma 4 starter notebook">Launch Gemma 4 Starter Notebook</a>
+      <a href="notebooks/colab_audit_suite.ipynb" id="notebook-btn-guide" class="mini-btn notebook-launch-btn" aria-label="Launch the audit suite notebook">Launch Audit Suite Notebook</a>
     </div>
 
     <div class="grid-2 audit-grid">
@@ -845,7 +845,7 @@
           <button class="mini-btn helper-btn" id="sample-btn" type="button">Try Example Input</button>
         </div>
         <button class="mini-btn proxy-btn" id="proxy-btn" type="button" aria-describedby="external-privacy-note" disabled>Run External Spectral Proxy</button>
-        <a href="notebooks/gemma4_starter.ipynb" id="notebook-btn" class="mini-btn notebook-launch-btn" aria-label="Launch Gemma 4 starter notebook">Launch Gemma 4 Starter Notebook</a>
+        <a href="notebooks/colab_audit_suite.ipynb" id="notebook-btn" class="mini-btn notebook-launch-btn" aria-label="Launch the audit suite notebook">Launch Audit Suite Notebook</a>
         <div id="audit-error" class="error-box" role="alert" aria-live="assertive"></div>
       </div>
       <div class="card">
@@ -989,12 +989,12 @@ function showSuccessState(btn, successLabel, defaultLabel) {
 }
 
 function resolveNotebookUrl() {
-  const localPath = 'notebooks/gemma4_starter.ipynb';
+  const localPath = 'notebooks/colab_audit_suite.ipynb';
   const host = (window.location.hostname || '').toLowerCase();
   const onGitHub = host.indexOf('github.io') !== -1 || host === 'github.com';
 
   if (onGitHub) {
-    return 'https://colab.research.google.com/github/holeyfield33-art/unitarity-lab/blob/main/notebooks/gemma4_starter.ipynb';
+    return 'https://colab.research.google.com/github/holeyfield33-art/unitarity-lab/blob/main/notebooks/colab_audit_suite.ipynb';
   }
 
   return localPath;
@@ -1041,10 +1041,10 @@ function initializeAuditHub() {
     const notebookUrl = resolveNotebookUrl();
     notebookBtn.setAttribute('href', notebookUrl);
     if (notebookUrl.indexOf('colab.research.google.com') !== -1) {
-      notebookBtn.textContent = 'Open Gemma 4 Starter in Colab';
+      notebookBtn.textContent = 'Open Audit Suite in Colab';
       notebookBtn.setAttribute('target', '_blank');
       notebookBtn.setAttribute('rel', 'noopener noreferrer');
-      notebookBtn.setAttribute('aria-label', 'Open Gemma 4 starter notebook in Google Colab');
+      notebookBtn.setAttribute('aria-label', 'Open the audit suite notebook in Google Colab');
     }
   }
 }

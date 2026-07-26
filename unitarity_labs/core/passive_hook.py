@@ -7,18 +7,32 @@ and exposes exactly the three fields an external caller needs:
 
 ``flagged`` is not hardcoded: each call feeds the wrapper's current
 ``spectral_gap`` into a real calibrated rupture detector from the VAR
-package (``var.detector.SpectralRuptureDetector`` — median/MAD baseline
-with hysteresis, see https://github.com/holeyfield33-art/VAR). This is
-the "depend on VAR, don't duplicate" module for unitarity-lab: the
-detector's own calibration/rupture state machine is reused as-is rather
-than reimplemented here.
+package (``var_spectral.detector.SpectralRuptureDetector`` — median/MAD
+baseline with hysteresis, see https://github.com/holeyfield33-art/VAR).
+This is the "depend on VAR, don't duplicate" module for unitarity-lab:
+the detector's own calibration/rupture state machine is reused as-is
+rather than reimplemented here.
+
+VAR is an optional dependency, so importing this module requires
+``pip install 'unitarity-labs[spectral]'``. Note that VAR's import
+package is ``var_spectral``, not ``var`` — the latter is an unrelated
+project on PyPI.
 """
 
 from __future__ import annotations
 
 from typing import Optional, TypedDict
 
-from var.detector import RuptureState, SpectralRuptureDetector
+try:
+    from var_spectral.detector import RuptureState, SpectralRuptureDetector
+except ImportError as e:  # pragma: no cover - exercised only without VAR
+    raise ImportError(
+        "PassiveTelemetryHook requires the VAR package. "
+        "Install with: pip install 'unitarity-labs[spectral]'\n"
+        "Note: VAR's import package is 'var_spectral' and its distribution "
+        "is 'var-spectral'. Do not `pip install var` — that is an unrelated "
+        "project (portfolio Value-at-Risk) which shadows this one."
+    ) from e
 
 from .universal_hook import UniversalHookWrapper
 

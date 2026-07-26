@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unitarity-labs"
-version = "3.1.7"
+version = "3.2.0"
 description = "Experimental multi-model runtime for transformer instrumentation, latent alignment tracing, distributed coordination"
 readme = "README.md"
 authors = [{name = "holeyfield33-art"}]
@@ -20,15 +20,17 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+# Upper bound on numpy only, no `==` pins: exact pins force pip to reinstall
+# the scientific stack inside hosted notebooks (Colab, Kaggle), breaking the
+# preinstalled torch that was compiled against the image's numpy.
 dependencies = [
     "torch>=2.0.0",
     "transformers>=4.30.0",
     "accelerate>=0.26",
-    "numpy>=1.24",
+    "numpy>=1.24,<3",
     "scipy>=1.10",
     "rich>=13.0",
     "safetensors>=0.4",
-    "var @ git+https://github.com/holeyfield33-art/VAR@31234551e524249a5e81453ec851c98ec8836fb7",
 ]
 requires-python = ">=3.9"
 
@@ -37,6 +39,20 @@ dist = [
     "pyzmq>=25.0",
     "msgpack>=1.0",
     "reedsolo>=1.5",
+]
+# VAR, for unitarity_labs.core.passive_hook. Its import package is
+# `var_spectral`; `var` on PyPI is an unrelated project.
+#
+# Previously declared as `var @ git+https://github.com/...`, which PyPI
+# rejects on upload — so the published wheel silently carried no VAR
+# dependency at all and `import unitarity_labs.core.passive_hook` failed
+# after a plain `pip install unitarity-labs`.
+spectral = [
+    "var-spectral>=1.1.0",
+]
+# For benchmarks.real_gsm8k, which loads GSM8K via `datasets`.
+bench = [
+    "datasets>=2.14",
 ]
 
 [project.urls]

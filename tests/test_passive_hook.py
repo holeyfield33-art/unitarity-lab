@@ -14,7 +14,7 @@ import pytest
 import torch
 
 from tests.conftest import ToyTransformer
-from var.detector import SpectralRuptureDetector
+from var_spectral.detector import SpectralRuptureDetector
 
 
 class _ToyConfig:
