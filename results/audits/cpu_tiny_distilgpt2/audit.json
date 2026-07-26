@@ -1,10 +1,11 @@
 {
   "suite": "audit_suite",
-  "generated_utc": "2026-07-26T19:20:44.335438+00:00",
+  "generated_utc": "2026-07-26T19:37:09.589486+00:00",
   "seed": 42,
   "repeat": 3,
   "model": "distilgpt2",
-  "dtype": "float32",
+  "dtype_requested": "float32",
+  "dtype_effective": "float32",
   "counts": {
     "pass": 16,
     "fail": 0,
@@ -24,7 +25,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.3248,
+      "duration_s_mean": 0.3704,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -110,7 +111,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.173,
+      "duration_s_mean": 0.1627,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -201,7 +202,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.1567,
+      "duration_s_mean": 0.1722,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -288,7 +289,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.0002,
+      "duration_s_mean": 0.0003,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -383,7 +384,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.0378,
+      "duration_s_mean": 0.0333,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -438,7 +439,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.2766,
+      "duration_s_mean": 0.2919,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -553,7 +554,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 0.0007,
+      "duration_s_mean": 0.0008,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -820,17 +821,17 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 2.36,
+      "duration_s_mean": 1.2496,
       "errors": [],
       "notes": [],
       "metrics": {
         "load_seconds": {
-          "value": 3.291,
-          "min": 1.873,
-          "max": 3.291,
-          "mean": 2.3513333333,
+          "value": 2.275,
+          "min": 0.724,
+          "max": 2.275,
+          "mean": 1.242,
           "deterministic": false,
-          "stdev": 0.6644809169
+          "stdev": 0.7304423317
         },
         "model_id": {
           "value": "distilgpt2",
@@ -903,7 +904,7 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 2.4428,
+      "duration_s_mean": 1.2386,
       "errors": [],
       "notes": [],
       "metrics": {
@@ -942,10 +943,42 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 1.9988,
+      "duration_s_mean": 0.8625,
       "errors": [],
       "notes": [],
       "metrics": {
+        "num_layers": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "source_layer": {
+          "value": 3,
+          "min": 3,
+          "max": 3,
+          "mean": 3.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "sink_layer": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "layer_gap": {
+          "value": 1,
+          "min": 1,
+          "max": 1,
+          "mean": 1.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
         "prompts": {
           "value": 4,
           "min": 4,
@@ -1013,12 +1046,12 @@
           "stdev": 0.0
         },
         "mean_forward_latency_ms": {
-          "value": 31.561,
-          "min": 26.966,
-          "max": 31.561,
-          "mean": 28.8953333333,
+          "value": 29.432,
+          "min": 23.238,
+          "max": 29.432,
+          "mean": 26.7033333333,
           "deterministic": false,
-          "stdev": 1.9468172887
+          "stdev": 2.581784568
         },
         "passed": {
           "value": true,
@@ -1035,10 +1068,42 @@
         "pass"
       ],
       "status": "pass",
-      "duration_s_mean": 1.9918,
+      "duration_s_mean": 0.9213,
       "errors": [],
       "notes": [],
       "metrics": {
+        "num_layers": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "source_layer": {
+          "value": 3,
+          "min": 3,
+          "max": 3,
+          "mean": 3.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "sink_layer": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "layer_gap": {
+          "value": 1,
+          "min": 1,
+          "max": 1,
+          "mean": 1.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
         "prompts": {
           "value": 6,
           "min": 6,

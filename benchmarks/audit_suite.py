@@ -629,15 +629,28 @@ def _var_rupture(rec: Recorder, args: argparse.Namespace) -> None:
 # Checks — model-dependent
 # ======================================================================
 
+def _effective_dtype(requested: str) -> str:
+    """The dtype a run will *actually* use, which may not be the one asked for.
+
+    torch's CPU kernels for float16 are incomplete, so a CPU run is coerced to
+    float32. Reporting the requested dtype in that case would put ``float16``
+    in a manifest describing a float32 run — metadata that quietly
+    misattributes every number under it.
+    """
+    import torch
+
+    if requested != "float32" and not torch.cuda.is_available():
+        return "float32"
+    return requested
+
+
 def _load_model(args: argparse.Namespace):
     """Load the audit model once per check, on the selected device."""
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     dtype = {"float32": torch.float32, "float16": torch.float16,
-             "bfloat16": torch.bfloat16}[args.dtype]
-    if not torch.cuda.is_available() and dtype is not torch.float32:
-        dtype = torch.float32
+             "bfloat16": torch.bfloat16}[_effective_dtype(args.dtype)]
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if tokenizer.pad_token is None:
@@ -731,6 +744,17 @@ def _model_zeta(rec: Recorder, args: argparse.Namespace) -> None:
     wrapper = UniversalHookWrapper(model=model, config=model.config, mode="passive")
     device = next(model.parameters()).device
 
+    # Record which layers ζ is actually computed between. The wrapper picks
+    # them proportionally (source = n//2, sink = n-2), so the *gap* between
+    # them grows with depth: 1 layer apart in a 6-layer model but 10 apart in
+    # a 24-layer one. ζ across two architectures of different depth is
+    # therefore not a like-for-like comparison, and the gap has to be on the
+    # record next to the number for anyone to see that.
+    rec.metric("num_layers", int(wrapper.num_layers))
+    rec.metric("source_layer", int(wrapper.mid_idx))
+    rec.metric("sink_layer", int(wrapper.last_idx))
+    rec.metric("layer_gap", int(wrapper.last_idx - wrapper.mid_idx))
+
     prompts = [
         "Explain coherence in quantum systems.",
         "Compute the sum of the first ten primes.",
@@ -786,6 +810,13 @@ def _model_null(rec: Recorder, args: argparse.Namespace) -> None:
     model, tokenizer, _ = _load_model(args)
     wrapper = UniversalHookWrapper(model=model, config=model.config, mode="passive")
     device = next(model.parameters()).device
+
+    # See model_zeta_passive: the source/sink gap scales with depth, so the
+    # z-score below is only comparable across models of equal layer_gap.
+    rec.metric("num_layers", int(wrapper.num_layers))
+    rec.metric("source_layer", int(wrapper.mid_idx))
+    rec.metric("sink_layer", int(wrapper.last_idx))
+    rec.metric("layer_gap", int(wrapper.last_idx - wrapper.mid_idx))
 
     prompts = [
         "Explain coherence in quantum systems.",
@@ -991,7 +1022,9 @@ def main() -> int:
     print(f"Audit suite — {len(names)} check(s), repeat={args.repeat}, seed={args.seed}")
     print(f"Output: {out_dir}")
     if not args.no_model:
-        print(f"Model:  {args.model} ({args.dtype})")
+        effective = _effective_dtype(args.dtype)
+        suffix = "" if effective == args.dtype else f" (requested {args.dtype})"
+        print(f"Model:  {args.model} [{effective}]{suffix}")
     print("=" * 72)
 
     summaries: List[Dict[str, Any]] = []
@@ -1050,7 +1083,8 @@ def main() -> int:
         "seed": args.seed,
         "repeat": args.repeat,
         "model": None if args.no_model else args.model,
-        "dtype": None if args.no_model else args.dtype,
+        "dtype_requested": None if args.no_model else args.dtype,
+        "dtype_effective": None if args.no_model else _effective_dtype(args.dtype),
         "counts": counts,
         "non_deterministic_metrics": nondet,
         "checks": summaries,
@@ -1067,7 +1101,8 @@ def main() -> int:
         "seed": args.seed,
         "repeat": args.repeat,
         "model": None if args.no_model else args.model,
-        "dtype": None if args.no_model else args.dtype,
+        "dtype_requested": None if args.no_model else args.dtype,
+        "dtype_effective": None if args.no_model else _effective_dtype(args.dtype),
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "pip_freeze": pip_freeze(),
     }, indent=2), encoding="utf-8")

@@ -1,0 +1,373 @@
+{
+  "suite": "audit_suite",
+  "generated_utc": "2026-07-26T19:38:32.640850+00:00",
+  "seed": 42,
+  "repeat": 2,
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "dtype_requested": "float16",
+  "dtype_effective": "float32",
+  "counts": {
+    "pass": 4,
+    "fail": 0,
+    "error": 0
+  },
+  "non_deterministic_metrics": [
+    "model_load.load_seconds",
+    "model_zeta_passive.mean_forward_latency_ms"
+  ],
+  "checks": [
+    {
+      "check": "model_load",
+      "repeats": 2,
+      "statuses": [
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 4.7784,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "load_seconds": {
+          "value": 6.696,
+          "min": 2.671,
+          "max": 6.696,
+          "mean": 4.6835,
+          "deterministic": false,
+          "stdev": 2.0125
+        },
+        "model_id": {
+          "value": "Qwen/Qwen2.5-0.5B-Instruct",
+          "deterministic": true
+        },
+        "dtype": {
+          "value": "float32",
+          "deterministic": true
+        },
+        "parameters": {
+          "value": 494032768,
+          "min": 494032768,
+          "max": 494032768,
+          "mean": 494032768.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "parameters_millions": {
+          "value": 494.03,
+          "min": 494.03,
+          "max": 494.03,
+          "mean": 494.03,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "weight_memory_gb": {
+          "value": 1.8404,
+          "min": 1.8404,
+          "max": 1.8404,
+          "mean": 1.8404,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "hidden_size": {
+          "value": 896,
+          "min": 896,
+          "max": 896,
+          "mean": 896.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "num_layers": {
+          "value": 24,
+          "min": 24,
+          "max": 24,
+          "mean": 24.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "vocab_size": {
+          "value": 151936,
+          "min": 151936,
+          "max": 151936,
+          "mean": 151936.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_generation_determinism",
+      "repeats": 2,
+      "statuses": [
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 6.9392,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "completions": {
+          "value": [
+            "The capital of France is Paris. It was founded in 789 AD by Charlemagne,",
+            "The capital of France is Paris. It was founded in 789 AD by Charlemagne,",
+            "The capital of France is Paris. It was founded in 789 AD by Charlemagne,"
+          ],
+          "deterministic": true
+        },
+        "unique_completions": {
+          "value": 1,
+          "min": 1,
+          "max": 1,
+          "mean": 1.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "greedy_deterministic": {
+          "value": true,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_zeta_passive",
+      "repeats": 2,
+      "statuses": [
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 5.4237,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "num_layers": {
+          "value": 24,
+          "min": 24,
+          "max": 24,
+          "mean": 24.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "source_layer": {
+          "value": 12,
+          "min": 12,
+          "max": 12,
+          "mean": 12.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "sink_layer": {
+          "value": 22,
+          "min": 22,
+          "max": 22,
+          "mean": 22.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "layer_gap": {
+          "value": 10,
+          "min": 10,
+          "max": 10,
+          "mean": 10.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "prompts": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zeta_values": {
+          "value": [
+            0.14735915,
+            0.10235533,
+            0.11768455,
+            0.16457272
+          ],
+          "deterministic": true
+        },
+        "spectral_gap_values": {
+          "value": [
+            0.3125,
+            0.53125,
+            0.03125,
+            4.40625
+          ],
+          "deterministic": true
+        },
+        "zeta_captured": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "spectral_gap_captured": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zeta_mean": {
+          "value": 0.13299294,
+          "min": 0.13299294,
+          "max": 0.13299294,
+          "mean": 0.13299294,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zeta_std": {
+          "value": 0.0243756,
+          "min": 0.0243756,
+          "max": 0.0243756,
+          "mean": 0.0243756,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "spectral_gap_mean": {
+          "value": 1.3203125,
+          "min": 1.3203125,
+          "max": 1.3203125,
+          "mean": 1.3203125,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "mean_forward_latency_ms": {
+          "value": 199.141,
+          "min": 199.141,
+          "max": 199.254,
+          "mean": 199.1975,
+          "deterministic": false,
+          "stdev": 0.0565
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_length_matched_null",
+      "repeats": 2,
+      "statuses": [
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 6.461,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "num_layers": {
+          "value": 24,
+          "min": 24,
+          "max": 24,
+          "mean": 24.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "source_layer": {
+          "value": 12,
+          "min": 12,
+          "max": 12,
+          "mean": 12.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "sink_layer": {
+          "value": 22,
+          "min": 22,
+          "max": 22,
+          "mean": 22.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "layer_gap": {
+          "value": 10,
+          "min": 10,
+          "max": 10,
+          "mean": 10.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "prompts": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "usable_captures": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "null_results": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "z_score_values": {
+          "value": [
+            0.686557,
+            -1.00091,
+            -0.829575,
+            3.463151,
+            0.383198,
+            -0.421544
+          ],
+          "deterministic": true
+        },
+        "z_score_mean": {
+          "value": 0.380146,
+          "min": 0.380146,
+          "max": 0.380146,
+          "mean": 0.380146,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "z_score_std": {
+          "value": 1.506224,
+          "min": 1.506224,
+          "max": 1.506224,
+          "mean": 1.506224,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gap_mean": {
+          "value": 0.00414608,
+          "min": 0.00414608,
+          "max": 0.00414608,
+          "mean": 0.00414608,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    }
+  ]
+}
