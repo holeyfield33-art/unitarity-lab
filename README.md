@@ -74,10 +74,36 @@ Evidence tiers:
 
 ## Installation
 
+### Naming
+
+Three related names differ by one character, which has caused real install
+failures. They are all correct — for different things:
+
+| | | |
+|---|---|---|
+| GitHub repository | `unitarity-lab` | **no** trailing `s` |
+| PyPI distribution | `unitarity-labs` | **has** a trailing `s` |
+| Python import | `unitarity_labs` | underscore, **has** a trailing `s` |
+
+So `pip install unitarity-lab` fails (that name is not on PyPI) while
+`git clone .../unitarity-lab` is right. Only the clone URL drops the `s`.
+
+The one related package that is genuinely renamed is VAR: its distribution is
+`var-spectral` and its import is `var_spectral`. Do **not** `pip install var` —
+that is an unrelated project (portfolio Value-at-Risk) that shadows it.
+
+| Package | `pip install` | `import` |
+|---|---|---|
+| this repo | `unitarity-labs` | `unitarity_labs` |
+| VAR | `var-spectral` | `var_spectral` |
+
 ### Install from PyPI
 
 ```bash
-pip install unitarity-labs
+pip install unitarity-labs                 # core
+pip install 'unitarity-labs[spectral]'     # + VAR, for passive_hook
+pip install 'unitarity-labs[bench]'        # + datasets, for real_gsm8k
+pip install 'unitarity-labs[dist]'         # + pyzmq/msgpack, for dual-node
 ```
 
 ### Install from source

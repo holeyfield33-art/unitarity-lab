@@ -52,10 +52,31 @@
 
 ## 1. Installation
 
+### Naming
+
+Three names differ by a single character. All three are correct, for
+different purposes:
+
+| | | |
+|---|---|---|
+| GitHub repository | `unitarity-lab` | **no** trailing `s` |
+| PyPI distribution | `unitarity-labs` | **has** a trailing `s` |
+| Python import | `unitarity_labs` | underscore, **has** a trailing `s` |
+
+`pip install unitarity-lab` fails — that name is not on PyPI. Only the git
+clone URL drops the `s`.
+
+VAR, the optional spectral dependency, installs as `var-spectral` and imports
+as `var_spectral`. `pip install var` fetches an unrelated project (portfolio
+Value-at-Risk) that shadows it.
+
 ### From PyPI (recommended)
 
 ```bash
-pip install unitarity-labs
+pip install unitarity-labs                 # core
+pip install 'unitarity-labs[spectral]'     # + VAR, for passive_hook
+pip install 'unitarity-labs[bench]'        # + datasets, for real_gsm8k
+pip install 'unitarity-labs[dist]'         # + pyzmq/msgpack, for dual-node
 ```
 
 ### From source

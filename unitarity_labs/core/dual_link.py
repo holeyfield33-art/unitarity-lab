@@ -44,7 +44,7 @@ class DualNodeEntanglementBridge:
         except ImportError as e:
             raise ImportError(
                 "The distributed/dual-node features require pyzmq. "
-                "Install with: pip install 'unitarity-lab[dist]'"
+                "Install with: pip install 'unitarity-labs[dist]'"
             ) from e
 
         self.node_id = node_id

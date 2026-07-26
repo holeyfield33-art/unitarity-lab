@@ -61,14 +61,30 @@ def _make_wrapper(mode: str = "active", enable_dual: bool = False):
 # ======================================================================
 
 class TestVersionConsistency:
-    def test_core_version_is_singularity(self):
+    """All version declarations must agree with each other.
+
+    These assert *consistency*, not a hardcoded literal: pinning the expected
+    string here means every release bump fails the suite until someone edits
+    this file too, which makes the test a chore rather than a check.
+    ``core/version.py`` is the single source of truth.
+    """
+
+    @staticmethod
+    def _canonical():
         from unitarity_labs.core.version import __version__
-        assert __version__ == "3.1.7"
+        return __version__
+
+    def test_core_version_is_pep440(self):
+        import re
+        version = self._canonical()
+        assert re.fullmatch(r"\d+\.\d+\.\d+(?:[-.]?\w+)?", version), (
+            f"core/version.py declares a non-PEP440 version: {version!r}"
+        )
 
     def test_init_reexports_version(self):
         import unitarity_labs.core as core
         assert hasattr(core, "__version__")
-        assert core.__version__ == "3.1.7"
+        assert core.__version__ == self._canonical()
 
     def test_setup_py_version_matches(self):
         """setup.py must declare the same version string."""
@@ -80,9 +96,17 @@ class TestVersionConsistency:
         for node in ast.walk(tree):
             if isinstance(node, ast.keyword) and node.arg == "version":
                 if isinstance(node.value, ast.Constant):
-                    assert node.value.value == "3.1.7"
+                    assert node.value.value == self._canonical()
                     return
         pytest.fail("Could not find version= in setup.py")
+
+    def test_pyproject_version_matches(self):
+        """pyproject.toml must declare the same version string."""
+        import tomllib
+        from pathlib import Path
+
+        data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+        assert data["project"]["version"] == self._canonical()
 
 
 # ======================================================================
