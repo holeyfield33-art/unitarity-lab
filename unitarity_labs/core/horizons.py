@@ -39,6 +39,7 @@ def _lanczos_tridiagonal(
     d: int,
     lanczos_iter: int = 15,
     device: Optional[torch.device] = None,
+    seed: Optional[int] = 0,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Lanczos algorithm to build a tridiagonal approximation of a
     symmetric linear operator.
@@ -53,6 +54,10 @@ def _lanczos_tridiagonal(
         Number of Lanczos iterations (Krylov dimension).  Default 15 —
         the DeepSeek precision-speed sweet spot.
     device : torch.device, optional
+    seed : int or None
+        Seed for the random starting vector. Defaults to ``0`` so repeated
+        calls on identical input return identical results. Pass ``None`` to
+        draw from the global RNG instead (not reproducible).
 
     Returns
     -------
@@ -66,13 +71,24 @@ def _lanczos_tridiagonal(
     The tridiagonal matrix T satisfies  T = Qᵀ A Q  where the columns
     of Q are the Lanczos vectors.  The eigenvalues of T approximate the
     extremal eigenvalues of A.
+
+    The starting vector is random by design — a fixed vector risks being
+    orthogonal to the dominant eigenvector — but it is drawn from a *local*
+    generator seeded with ``seed``. That matters twice over: results become
+    reproducible, and the global RNG stream is left untouched, so calling this
+    no longer perturbs sampled generation happening elsewhere in the process.
     """
     k = min(lanczos_iter, d)
     alpha = torch.zeros(k, device=device)
     beta = torch.zeros(max(k - 1, 0), device=device)
 
     # Initial random unit vector
-    q = torch.randn(d, device=device)
+    if seed is None:
+        q = torch.randn(d, device=device)
+    else:
+        generator = torch.Generator(device=device or "cpu")
+        generator.manual_seed(seed)
+        q = torch.randn(d, device=device, generator=generator)
     q = q / (q.norm() + 1e-12)
 
     q_prev = torch.zeros(d, device=device)

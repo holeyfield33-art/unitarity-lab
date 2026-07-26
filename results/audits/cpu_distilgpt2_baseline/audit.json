@@ -1,0 +1,1108 @@
+{
+  "suite": "audit_suite",
+  "generated_utc": "2026-07-26T19:20:44.335438+00:00",
+  "seed": 42,
+  "repeat": 3,
+  "model": "distilgpt2",
+  "dtype": "float32",
+  "counts": {
+    "pass": 16,
+    "fail": 0,
+    "error": 0
+  },
+  "non_deterministic_metrics": [
+    "model_load.load_seconds",
+    "model_zeta_passive.mean_forward_latency_ms"
+  ],
+  "checks": [
+    {
+      "check": "env_capture",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.3248,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "python_version": {
+          "value": "3.11.15",
+          "deterministic": true
+        },
+        "platform": {
+          "value": "Linux-6.18.5-x86_64-with-glibc2.39",
+          "deterministic": true
+        },
+        "numpy_version": {
+          "value": "2.4.6",
+          "deterministic": true
+        },
+        "torch_version": {
+          "value": "2.13.0+cpu",
+          "deterministic": true
+        },
+        "cuda_available": {
+          "value": false,
+          "deterministic": true
+        },
+        "device": {
+          "value": "cpu",
+          "deterministic": true
+        },
+        "transformers_version": {
+          "value": "4.57.6",
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "package_integrity",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0006,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "unitarity_labs_import_version": {
+          "value": "3.2.0",
+          "deterministic": true
+        },
+        "unitarity_labs_dist_version": {
+          "value": "3.2.0",
+          "deterministic": true
+        },
+        "version_consistent": {
+          "value": true,
+          "deterministic": true
+        },
+        "var_spectral_version": {
+          "value": "1.1.0",
+          "deterministic": true
+        },
+        "var_spectral_importable": {
+          "value": true,
+          "deterministic": true
+        },
+        "var_module_file": {
+          "value": null,
+          "deterministic": true
+        },
+        "var_name_shadowed_by_foreign_package": {
+          "value": false,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "bocpd_null",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.173,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "stream_length": {
+          "value": 600,
+          "min": 600,
+          "max": 600,
+          "mean": 600.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "warmup_steps": {
+          "value": 100,
+          "min": 100,
+          "max": 100,
+          "mean": 100.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "post_warmup_steps": {
+          "value": 500,
+          "min": 500,
+          "max": 500,
+          "mean": 500.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "false_alarms": {
+          "value": 0,
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "false_alarm_rate": {
+          "value": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "max_changepoint_prob": {
+          "value": 1e-07,
+          "min": 1e-07,
+          "max": 1e-07,
+          "mean": 1e-07,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "mean_changepoint_prob": {
+          "value": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_mean_0": {
+          "value": 0.599246,
+          "min": 0.599246,
+          "max": 0.599246,
+          "mean": 0.599246,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_std_0": {
+          "value": 0.011592,
+          "min": 0.011592,
+          "max": 0.011592,
+          "mean": 0.011592,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "bocpd_changepoint",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.1567,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "stream_length": {
+          "value": 600,
+          "min": 600,
+          "max": 600,
+          "mean": 600.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "true_changepoint_index": {
+          "value": 300,
+          "min": 300,
+          "max": 300,
+          "mean": 300.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "first_alarm_index": {
+          "value": 300,
+          "min": 300,
+          "max": 300,
+          "mean": 300.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "detected": {
+          "value": true,
+          "deterministic": true
+        },
+        "detection_delay_steps": {
+          "value": 0,
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "pre_changepoint_alarms": {
+          "value": 0,
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "max_prob_before_cp": {
+          "value": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "max_prob_after_cp": {
+          "value": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_mean_0": {
+          "value": 0.599246,
+          "min": 0.599246,
+          "max": 0.599246,
+          "mean": 0.599246,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "bocpd_warmup_calibration",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0002,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "empirical_mean": {
+          "value": 0.639543,
+          "min": 0.639543,
+          "max": 0.639543,
+          "mean": 0.639543,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "empirical_std": {
+          "value": 0.013196,
+          "min": 0.013196,
+          "max": 0.013196,
+          "mean": 0.013196,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_mean_0": {
+          "value": 0.6395432391302139,
+          "min": 0.6395432391302139,
+          "max": 0.6395432391302139,
+          "mean": 0.6395432391,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_mean_0__expected": {
+          "value": 0.6395432391302139,
+          "min": 0.6395432391302139,
+          "max": 0.6395432391302139,
+          "mean": 0.6395432391,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_mean_0__deviation": {
+          "value": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_mean_0__within_tol": {
+          "value": true,
+          "deterministic": true
+        },
+        "calibrated_std_0": {
+          "value": 0.013195880147455843,
+          "min": 0.013195880147455843,
+          "max": 0.013195880147455843,
+          "mean": 0.0131958801,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_std_0__expected": {
+          "value": 0.013195880147455843,
+          "min": 0.013195880147455843,
+          "max": 0.013195880147455843,
+          "mean": 0.0131958801,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_std_0__deviation": {
+          "value": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calibrated_std_0__within_tol": {
+          "value": true,
+          "deterministic": true
+        },
+        "calibrated_flag": {
+          "value": true,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "bocpd_return_range",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0378,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "samples": {
+          "value": 158,
+          "min": 158,
+          "max": 158,
+          "mean": 158.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "min_prob": {
+          "value": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "max_prob": {
+          "value": 1.0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "any_nan": {
+          "value": false,
+          "deterministic": true
+        },
+        "any_inf": {
+          "value": false,
+          "deterministic": true
+        },
+        "all_in_unit_interval": {
+          "value": true,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "gue_r_ratio",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.2766,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "matrix_dim": {
+          "value": 256,
+          "min": 256,
+          "max": 256,
+          "mean": 256.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "ensembles": {
+          "value": 24,
+          "min": 24,
+          "max": 24,
+          "mean": 24.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gue_r_std": {
+          "value": 0.019592,
+          "min": 0.019592,
+          "max": 0.019592,
+          "mean": 0.019592,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "poisson_r_std": {
+          "value": 0.018345,
+          "min": 0.018345,
+          "max": 0.018345,
+          "mean": 0.018345,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gue_r_mean": {
+          "value": 0.5952615330993091,
+          "min": 0.5952615330993091,
+          "max": 0.5952615330993091,
+          "mean": 0.5952615331,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gue_r_mean__expected": {
+          "value": 0.5996,
+          "min": 0.5996,
+          "max": 0.5996,
+          "mean": 0.5996,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gue_r_mean__deviation": {
+          "value": 0.0043384669006909515,
+          "min": 0.0043384669006909515,
+          "max": 0.0043384669006909515,
+          "mean": 0.0043384669,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gue_r_mean__within_tol": {
+          "value": true,
+          "deterministic": true
+        },
+        "poisson_r_mean": {
+          "value": 0.38487033574006096,
+          "min": 0.38487033574006096,
+          "max": 0.38487033574006096,
+          "mean": 0.3848703357,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "poisson_r_mean__expected": {
+          "value": 0.3863,
+          "min": 0.3863,
+          "max": 0.3863,
+          "mean": 0.3863,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "poisson_r_mean__deviation": {
+          "value": 0.001429664259939012,
+          "min": 0.001429664259939012,
+          "max": 0.001429664259939012,
+          "mean": 0.0014296643,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "poisson_r_mean__within_tol": {
+          "value": true,
+          "deterministic": true
+        },
+        "separation": {
+          "value": 0.210391,
+          "min": 0.210391,
+          "max": 0.210391,
+          "mean": 0.210391,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "chronos_tps",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0007,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "steady_state_tps": {
+          "value": 11.781162,
+          "min": 11.781162,
+          "max": 11.781162,
+          "mean": 11.781162,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "tps_after_extreme_spike": {
+          "value": 12.0,
+          "min": 12.0,
+          "max": 12.0,
+          "mean": 12.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "clip_min": {
+          "value": 0.5,
+          "min": 0.5,
+          "max": 0.5,
+          "mean": 0.5,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "clip_max": {
+          "value": 200.0,
+          "min": 200.0,
+          "max": 200.0,
+          "mean": 200.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "spike_bounded_by_clip": {
+          "value": true,
+          "deterministic": true
+        },
+        "tps_after_zero": {
+          "value": 12.0,
+          "min": 12.0,
+          "max": 12.0,
+          "mean": 12.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zero_bounded_by_clip": {
+          "value": true,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "chronos_desync",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0003,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "calm_trip_count": {
+          "value": 0,
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calm_threshold": {
+          "value": 0.2,
+          "min": 0.2,
+          "max": 0.2,
+          "mean": 0.2,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "hot_first_trip_index": {
+          "value": 0,
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "hot_threshold": {
+          "value": 0.2,
+          "min": 0.2,
+          "max": 0.2,
+          "mean": 0.2,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "chronos_shard_roundtrip",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0005,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "shard_bytes": {
+          "value": 264,
+          "min": 264,
+          "max": 264,
+          "mean": 264.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "clean_roundtrip_ok": {
+          "value": true,
+          "deterministic": true
+        },
+        "single_symbol_repaired": {
+          "value": true,
+          "deterministic": true
+        },
+        "repair_matches_clean": {
+          "value": true,
+          "deterministic": true
+        },
+        "beyond_capacity_outcome": {
+          "value": "raised_ValueError",
+          "deterministic": true
+        },
+        "silent_corruption": {
+          "value": false,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "chronos_tau_chain",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0004,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "hash_present": {
+          "value": true,
+          "deterministic": true
+        },
+        "hash_length": {
+          "value": 64,
+          "min": 64,
+          "max": 64,
+          "mean": 64.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "hash_reproducible": {
+          "value": true,
+          "deterministic": true
+        },
+        "tamper_detected": {
+          "value": true,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "var_rupture_detector",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 0.0008,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "calm_samples": {
+          "value": 400,
+          "min": 400,
+          "max": 400,
+          "mean": 400.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "calm_rupture_steps": {
+          "value": 0,
+          "min": 0,
+          "max": 0,
+          "mean": 0.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "injected_rupture_index": {
+          "value": 300,
+          "min": 300,
+          "max": 300,
+          "mean": 300.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "first_rupture_index": {
+          "value": 302,
+          "min": 302,
+          "max": 302,
+          "mean": 302.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "rupture_detected": {
+          "value": true,
+          "deterministic": true
+        },
+        "detection_delay_steps": {
+          "value": 2,
+          "min": 2,
+          "max": 2,
+          "mean": 2.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_load",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 2.36,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "load_seconds": {
+          "value": 3.291,
+          "min": 1.873,
+          "max": 3.291,
+          "mean": 2.3513333333,
+          "deterministic": false,
+          "stdev": 0.6644809169
+        },
+        "model_id": {
+          "value": "distilgpt2",
+          "deterministic": true
+        },
+        "dtype": {
+          "value": "float32",
+          "deterministic": true
+        },
+        "parameters": {
+          "value": 81912576,
+          "min": 81912576,
+          "max": 81912576,
+          "mean": 81912576.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "parameters_millions": {
+          "value": 81.91,
+          "min": 81.91,
+          "max": 81.91,
+          "mean": 81.91,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "weight_memory_gb": {
+          "value": 0.3051,
+          "min": 0.3051,
+          "max": 0.3051,
+          "mean": 0.3051,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "hidden_size": {
+          "value": 768,
+          "min": 768,
+          "max": 768,
+          "mean": 768.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "num_layers": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "vocab_size": {
+          "value": 50257,
+          "min": 50257,
+          "max": 50257,
+          "mean": 50257.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_generation_determinism",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 2.4428,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "completions": {
+          "value": [
+            "The capital of France is the capital of the French Republic. The capital of France is the capital of the",
+            "The capital of France is the capital of the French Republic. The capital of France is the capital of the",
+            "The capital of France is the capital of the French Republic. The capital of France is the capital of the"
+          ],
+          "deterministic": true
+        },
+        "unique_completions": {
+          "value": 1,
+          "min": 1,
+          "max": 1,
+          "mean": 1.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "greedy_deterministic": {
+          "value": true,
+          "deterministic": true
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_zeta_passive",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 1.9988,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "prompts": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zeta_values": {
+          "value": [
+            0.99339515,
+            0.99086821,
+            0.99342811,
+            0.9935559
+          ],
+          "deterministic": true
+        },
+        "spectral_gap_values": {
+          "value": [
+            0.0625,
+            0.09375,
+            0.03125,
+            0.09375
+          ],
+          "deterministic": true
+        },
+        "zeta_captured": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "spectral_gap_captured": {
+          "value": 4,
+          "min": 4,
+          "max": 4,
+          "mean": 4.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zeta_mean": {
+          "value": 0.99281184,
+          "min": 0.99281184,
+          "max": 0.99281184,
+          "mean": 0.99281184,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "zeta_std": {
+          "value": 0.00112376,
+          "min": 0.00112376,
+          "max": 0.00112376,
+          "mean": 0.00112376,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "spectral_gap_mean": {
+          "value": 0.0703125,
+          "min": 0.0703125,
+          "max": 0.0703125,
+          "mean": 0.0703125,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "mean_forward_latency_ms": {
+          "value": 31.561,
+          "min": 26.966,
+          "max": 31.561,
+          "mean": 28.8953333333,
+          "deterministic": false,
+          "stdev": 1.9468172887
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    },
+    {
+      "check": "model_length_matched_null",
+      "repeats": 3,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "status": "pass",
+      "duration_s_mean": 1.9918,
+      "errors": [],
+      "notes": [],
+      "metrics": {
+        "prompts": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "usable_captures": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "null_results": {
+          "value": 6,
+          "min": 6,
+          "max": 6,
+          "mean": 6.0,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "z_score_values": {
+          "value": [
+            14.290525,
+            7.271328,
+            15.09964,
+            16.266892,
+            12.133851,
+            15.774315
+          ],
+          "deterministic": true
+        },
+        "z_score_mean": {
+          "value": 13.472758,
+          "min": 13.472758,
+          "max": 13.472758,
+          "mean": 13.472758,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "z_score_std": {
+          "value": 3.073278,
+          "min": 3.073278,
+          "max": 3.073278,
+          "mean": 3.073278,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "gap_mean": {
+          "value": 0.00473496,
+          "min": 0.00473496,
+          "max": 0.00473496,
+          "mean": 0.00473496,
+          "deterministic": true,
+          "stdev": 0.0
+        },
+        "passed": {
+          "value": true,
+          "deterministic": true
+        }
+      }
+    }
+  ]
+}
