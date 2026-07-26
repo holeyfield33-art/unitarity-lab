@@ -281,6 +281,54 @@ than with unrelated inputs' sinks. In active mode an additional
 
 ## Benchmarks
 
+### Audit suite — start here
+
+`benchmarks/audit_suite.py` runs every check **one at a time**, writes each
+measured value to `audit.log.jsonl` as it completes, and records a manifest
+(git SHA, device, seed, full `pip freeze`) beside it.
+
+```bash
+python -m benchmarks.audit_suite --list                     # what it runs
+python -m benchmarks.audit_suite --no-model                 # no weights needed
+python -m benchmarks.audit_suite --model-tier small --repeat 3
+python -m benchmarks.audit_suite --only bocpd_changepoint --repeat 5
+```
+
+`--repeat N` re-runs each check N times and reports mean/std/min/max per
+metric plus a `deterministic` flag. **Check that flag before quoting a
+number.** On a clean run only wall-clock timings should vary; anything else
+varying is a finding, not noise to average away.
+
+Checks with a known correct answer are asserted against it and the deviation
+is recorded, rather than the observed value simply being printed:
+
+| Check | Reference |
+|---|---|
+| `gue_r_ratio` | ⟨r⟩ ≈ 0.5996 (GUE), ≈ 0.3863 (Poisson), from random-matrix theory |
+| `chronos_shard_roundtrip` | RS with 2 parity symbols corrects exactly 1 corrupted symbol, detects more |
+| `bocpd_changepoint` | Injected changepoint at a known index → ground-truth detection delay |
+| `bocpd_null` | Stationary stream → zero false alarms |
+| `var_rupture_detector` | Calm signal → no rupture; injected excursion → detected |
+
+Model-dependent checks use T4-sized presets via `--model-tier`:
+
+| tier | model | params | dtype | ~VRAM |
+|---|---|---|---|---|
+| `tiny` | `distilgpt2` | 82 M | fp32 | 0.4 GB |
+| `small` | `gpt2` | 124 M | fp32 | 0.6 GB |
+| `medium` | `gpt2-medium` | 355 M | fp16 | 0.8 GB |
+| `large` | `Qwen/Qwen2.5-0.5B-Instruct` | 494 M | fp16 | 1.1 GB |
+| `xl` | `Qwen/Qwen2.5-1.5B-Instruct` | 1.5 B | fp16 | 3.2 GB |
+
+`vram_gb` is the weight footprint only; activations and KV cache add to it.
+
+A committed CPU baseline lives in
+`results/audits/cpu_distilgpt2_baseline/`: 16/16 checks pass, and of 129
+non-timing metrics, 0 differ across two independent processes.
+
+To run this on a Colab T4, open
+[`notebooks/colab_audit_suite.ipynb`](notebooks/colab_audit_suite.ipynb).
+
 ### Real evaluation — GSM8K
 
 `benchmarks/real_gsm8k.py` is the actual evaluation: it loads GSM8K, generates

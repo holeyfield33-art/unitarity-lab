@@ -1,0 +1,197 @@
+{
+  "model": "gpt2",
+  "mode": "passive",
+  "seed": 42,
+  "categories": [
+    "math",
+    "narrative",
+    "factual"
+  ],
+  "prompts_per_category": 2,
+  "n": 6,
+  "summary": {
+    "n_prompts": 6,
+    "n_categories": 3,
+    "n_within_computed": 6,
+    "n_cross_computed": 6,
+    "mean_gap_within_category": 0.1254,
+    "mean_gap_cross_category": 0.167264,
+    "separation": -0.041864
+  },
+  "results": [
+    {
+      "prompt_id": 0,
+      "category": "math",
+      "prompt": "Question: What is 12 + 37?\nAnswer:",
+      "completion": " 12 +",
+      "latency_ms": 78.61,
+      "prompt_tokens": 11,
+      "completion_tokens": 2,
+      "zeta_raw": 0.7893779277801514,
+      "spectral_gap": 0.0009765625,
+      "null_within_category": {
+        "null_mean": 0.5455354452133179,
+        "null_std": 0.0,
+        "gap": 0.2438424825668335,
+        "z_score": Infinity,
+        "n_controls": 1,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.5424835681915283,
+        "null_std": 0.03934463486075401,
+        "gap": 0.24689435958862305,
+        "z_score": 6.275172217569577,
+        "n_controls": 4,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 1,
+      "category": "math",
+      "prompt": "Question: If a train travels 60 miles in 2 hours, what is its average speed?\nAnswer:",
+      "completion": " It depends",
+      "latency_ms": 51.04,
+      "prompt_tokens": 21,
+      "completion_tokens": 2,
+      "zeta_raw": 0.7074183821678162,
+      "spectral_gap": 0.0009765625,
+      "null_within_category": {
+        "null_mean": 0.5625812411308289,
+        "null_std": 0.0,
+        "gap": 0.1448371410369873,
+        "z_score": Infinity,
+        "n_controls": 1,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.5193548798561096,
+        "null_std": 0.009418852627277374,
+        "gap": 0.18806350231170654,
+        "z_score": 19.96671035780591,
+        "n_controls": 4,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 2,
+      "category": "narrative",
+      "prompt": "Once upon a time, in a quiet village by the sea,",
+      "completion": " the people",
+      "latency_ms": 43.87,
+      "prompt_tokens": 13,
+      "completion_tokens": 2,
+      "zeta_raw": 0.7944432497024536,
+      "spectral_gap": 0.0,
+      "null_within_category": {
+        "null_mean": 0.6093844771385193,
+        "null_std": 0.0,
+        "gap": 0.18505877256393433,
+        "z_score": Infinity,
+        "n_controls": 1,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.649695634841919,
+        "null_std": 0.075957752764225,
+        "gap": 0.14474761486053467,
+        "z_score": 1.9056331920434155,
+        "n_controls": 4,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 3,
+      "category": "narrative",
+      "prompt": "The old lighthouse keeper had not seen another soul in months when",
+      "completion": " he was",
+      "latency_ms": 43.02,
+      "prompt_tokens": 12,
+      "completion_tokens": 2,
+      "zeta_raw": 0.7291486859321594,
+      "spectral_gap": 0.00048828125,
+      "null_within_category": {
+        "null_mean": 0.6074343919754028,
+        "null_std": 0.0,
+        "gap": 0.12171429395675659,
+        "z_score": Infinity,
+        "n_controls": 1,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.5554381608963013,
+        "null_std": 0.01322272140532732,
+        "gap": 0.17371052503585815,
+        "z_score": 13.137274824974508,
+        "n_controls": 4,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 4,
+      "category": "factual",
+      "prompt": "Question: What is the capital of France?\nAnswer:",
+      "completion": " The capital",
+      "latency_ms": 45.71,
+      "prompt_tokens": 12,
+      "completion_tokens": 2,
+      "zeta_raw": 0.7369333505630493,
+      "spectral_gap": 0.00390625,
+      "null_within_category": {
+        "null_mean": 0.7151165008544922,
+        "null_std": 0.0,
+        "gap": 0.02181684970855713,
+        "z_score": Infinity,
+        "n_controls": 1,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.6146826148033142,
+        "null_std": 0.0666889026761055,
+        "gap": 0.12225073575973511,
+        "z_score": 1.833149607416427,
+        "n_controls": 4,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    },
+    {
+      "prompt_id": 5,
+      "category": "factual",
+      "prompt": "Question: Who wrote the play Romeo and Juliet?\nAnswer:",
+      "completion": " The play",
+      "latency_ms": 45.57,
+      "prompt_tokens": 13,
+      "completion_tokens": 2,
+      "zeta_raw": 0.7196869254112244,
+      "spectral_gap": 0.0009765625,
+      "null_within_category": {
+        "null_mean": 0.6845575571060181,
+        "null_std": 0.0,
+        "gap": 0.0351293683052063,
+        "z_score": Infinity,
+        "n_controls": 1,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      },
+      "null_cross_category": {
+        "null_mean": 0.591771125793457,
+        "null_std": 0.0642484650015831,
+        "gap": 0.12791579961776733,
+        "z_score": 1.9909549530033979,
+        "n_controls": 4,
+        "matched_len_tokens": 1,
+        "length_matched": true
+      }
+    }
+  ]
+}
