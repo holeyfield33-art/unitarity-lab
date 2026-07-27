@@ -6,11 +6,22 @@
 [![Release to PyPI](https://img.shields.io/github/actions/workflow/status/holeyfield33-art/unitarity-lab/release.yml?label=Release%20to%20PyPI)](https://github.com/holeyfield33-art/unitarity-lab/actions/workflows/release.yml)
 [![Notebook Validation](https://img.shields.io/github/actions/workflow/status/holeyfield33-art/unitarity-lab/notebook-validation.yml?label=Notebook%20Validation)](https://github.com/holeyfield33-art/unitarity-lab/actions/workflows/notebook-validation.yml)
 
-Geometric Assurance is a spectral diagnostics and model integrity suite for transformer systems. This repository, `unitarity-lab`, is the research and audit engine for deep instrumentation, hidden-state analysis, and reproducible experiments.
+Geometric Assurance is a spectral diagnostics and research-instrumentation suite for transformer systems. This repository, `unitarity-lab`, is the research and audit engine for deep instrumentation, hidden-state analysis, and reproducible experiments.
 
 Professional summary:
 
-`unitarity-lab` is a research-grade instrumentation and audit engine for transformer models. It provides hidden-state and eigenvalue diagnostics, reproducible coherence metrics, and distributed runtime controls so teams can measure model integrity instead of relying on prompt-level impressions.
+`unitarity-lab` is a research-grade instrumentation and audit engine for transformer models. It provides hidden-state and eigenvalue diagnostics, a reproducible audit harness, and distributed runtime controls.
+
+> **Validation status (read this first).** The spectral / ζ *coherence* metric
+> is research instrumentation, **not** a validated model-integrity signal. Our
+> own cross-model audit found the headline ζ result (z ≈ 13.5) is a
+> layer-adjacency artifact that vanishes once depth is controlled (z < 1,
+> indistinguishable from a length-matched null). What *is* reproducible is the
+> audit harness itself and VAR's anomaly detector on its own calibrated signal.
+> Full evidence — including the null result — is in
+> [`results/audits/README.md`](results/audits/README.md) and
+> [`docs/LINEAGE.md`](docs/LINEAGE.md). Do not present ζ as measuring model
+> integrity.
 
 ## Why this repo matters
 

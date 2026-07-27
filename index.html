@@ -680,14 +680,33 @@
   <div class="container">
     <div class="hero-box">
       <div class="eyebrow">Geometric Assurance Suite</div>
-      <h1>Spectral diagnostics and model integrity tooling for transformer systems</h1>
-      <p class="hero-sub">API-accessible diagnostics, research-grade instrumentation, and advanced drift monitoring for teams that need measurable signals about model behavior.</p>
+      <h1>Spectral diagnostics and research instrumentation for transformer systems</h1>
+      <p class="hero-sub">API-accessible diagnostics, research-grade instrumentation, and drift monitoring. Alpha research tooling &mdash; see the validation status below for what the numbers do and do not support.</p>
       <p class="locked-line">Geometric Assurance is a spectral diagnostics and model integrity suite for transformer systems. Geometric-brain-mcp is the front door, Unitarity-lab is the research engine, and VAR is the advanced monitoring layer.</p>
       <div class="cta-row">
         <a class="btn-primary" href="mailto:contact@aletheia-sovereign.com?subject=Request%20an%20Audit">Request an Audit</a>
         <a class="btn-secondary" href="https://github.com/holeyfield33-art/geometric-brain-mcp" target="_blank" rel="noopener noreferrer">Get API Access</a>
         <a class="btn-tertiary" href="https://github.com/holeyfield33-art/unitarity-lab" target="_blank" rel="noopener noreferrer">Explore Research</a>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="validation-status">
+  <div class="container">
+    <div class="card tier-weak" style="border-left:4px solid var(--amber);">
+      <span class="label">Validation status — read before relying on any number</span>
+      <h3 style="margin-top:8px;">The spectral / &zeta; coherence metric is research instrumentation, not a validated integrity signal.</h3>
+      <p>Our own cross-model audit found that the headline &zeta; result (z&nbsp;&asymp;&nbsp;13.5) is a
+      <strong>layer-adjacency artifact</strong>: it comes from a shallow model where the two compared
+      layers are neighbours. When depth is controlled, the effect disappears (z&nbsp;&lt;&nbsp;1 &mdash;
+      indistinguishable from a length-matched null). At present, &zeta; is <strong>not</strong> established
+      as detecting model integrity, drift, or tampering.</p>
+      <p class="muted-note">What <em>is</em> reproducible: the audit harness itself (129/129 non-timing
+      metrics identical across independent runs) and VAR's anomaly detector on its own calibrated signal.
+      The full evidence &mdash; including the null result &mdash; lives in
+      <a href="https://github.com/holeyfield33-art/unitarity-lab/blob/main/results/audits/README.md" target="_blank" rel="noopener noreferrer">results/audits/README.md</a>
+      and <a href="https://github.com/holeyfield33-art/unitarity-lab/blob/main/docs/LINEAGE.md" target="_blank" rel="noopener noreferrer">docs/LINEAGE.md</a>.</p>
     </div>
   </div>
 </section>
@@ -734,18 +753,18 @@
 
 <section id="evidence">
   <div class="container">
-    <h2 class="section-title">Evidence tiers and analysis modes</h2>
-    <p class="section-intro">Hidden-state and eigenvalue analysis are primary evidence-bearing modes. Text proxy mode remains available only as an indirect demo path.</p>
+    <h2 class="section-title">Analysis modes, by directness of access</h2>
+    <p class="section-intro">These tiers rank how directly each mode reads the model's internals &mdash; <em>not</em> how well any has been validated to detect a given property. See the validation status above: the spectral coherence metric is not currently established as an integrity signal.</p>
     <div class="grid-3">
       <article class="card tier-strong">
-        <span class="label">Primary Evidence</span>
+        <span class="label">Direct internal access</span>
         <h3>Hidden-state analysis</h3>
-        <p>Direct instrumentation of latent activations for model comparison, drift monitoring, and reproducible audits.</p>
+        <p>Direct instrumentation of latent activations for model comparison and reproducible experiments. Requires open-weight, self-hosted models (API-only models expose no hidden states).</p>
       </article>
       <article class="card tier-mid">
-        <span class="label">Primary Evidence</span>
+        <span class="label">Direct internal access</span>
         <h3>Eigenvalue analysis</h3>
-        <p>Spectral structure measurements to support anomaly detection and integrity monitoring workflows.</p>
+        <p>Spectral structure measurements over activations. A research instrument; its cross-model discriminative power has not been established (see validation status).</p>
       </article>
       <article class="card tier-weak">
         <span class="label">Indirect / demo-only / low-evidence mode</span>
