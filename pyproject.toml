@@ -77,6 +77,11 @@ Repository = "https://github.com/holeyfield33-art/unitarity-lab.git"
 [project.scripts]
 unitarity-start = "unitarity_labs.cli:main"
 unitarity-validate = "unitarity_labs.cli:validate_text_main"
+blackbox-eval = "unitarity_labs.blackbox_eval.cli:main"
+
+[tool.setuptools.package-data]
+# Ship the bundled black-box eval suites inside the wheel.
+"unitarity_labs.blackbox_eval" = ["suites/*.jsonl", "suites/*.json"]
 
 [tool.setuptools.packages.find]
 include = ["unitarity_labs", "unitarity_labs.*", "benchmarks", "benchmarks.*"]

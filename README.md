@@ -23,6 +23,23 @@ Professional summary:
 > [`docs/LINEAGE.md`](docs/LINEAGE.md). Do not present ζ as measuring model
 > integrity.
 
+## Two ways to test a model (white-box vs black-box)
+
+- **White-box** (most of this repo): reads a model's internal activations —
+  attention, hidden states, eigenvalues. Only works on small open-weight models
+  you run yourself; hosted API models expose no internals and bigger open models
+  need a GPU.
+- **Black-box** ([`unitarity_labs/blackbox_eval`](unitarity_labs/blackbox_eval/README.md)):
+  prompt in, text out, scored by rules. Works on **any** model — including large
+  hosted ones (Claude, GPT). This is the tool for prompt testing, red-teaming,
+  and comparing models.
+
+```bash
+# Offline dry run (no keys); then point it at a big model:
+python -m unitarity_labs.blackbox_eval run --provider mock
+python -m unitarity_labs.blackbox_eval run --provider anthropic --model claude-opus-5 --out results/opus5
+```
+
 ## Why this repo matters
 
 - Hidden-state and eigenvalue analysis with transparent, testable metrics.
