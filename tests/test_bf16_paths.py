@@ -52,6 +52,7 @@ class _ToyModel(nn.Module):
 # ======================================================================
 
 def test_dual_link_send_bf16_serializes_fp32():
+    pytest.importorskip("zmq")  # dual-node bridge needs the optional `dist` extra
     from unitarity_labs.core.dual_link import DualNodeEntanglementBridge
 
     b = DualNodeEntanglementBridge(node_id="A", krylov_dim=8, zmq_port=48555)

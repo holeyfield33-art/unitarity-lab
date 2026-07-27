@@ -38,7 +38,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 import torch.nn as nn
-import zmq
+
+# zmq ships in the optional `dist` extra. Skip this module cleanly on a base
+# install instead of erroring out the whole collection.
+zmq = pytest.importorskip("zmq")
 
 from unitarity_labs.core.dual_link import DualNodeEntanglementBridge, register_dual_node_hook
 

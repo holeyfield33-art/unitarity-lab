@@ -20,7 +20,11 @@ import numpy as np
 import pytest
 import torch
 
-from unitarity_labs.core.chronos_lock import (
+# chronos_lock uses reedsolo (now a core dependency). Guard anyway so an
+# incomplete environment skips rather than erroring the whole collection.
+pytest.importorskip("reedsolo")
+
+from unitarity_labs.core.chronos_lock import (  # noqa: E402
     DESYNC_BASE_THRESHOLD,
     ENTROPY_DRIFT_LIMIT,
     PROBATION_CONSECUTIVE,

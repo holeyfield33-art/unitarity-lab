@@ -14,7 +14,11 @@ import pytest
 import torch
 
 from tests.conftest import ToyTransformer
-from var_spectral.detector import SpectralRuptureDetector
+
+# var_spectral is the sibling VAR repo, shipped in the optional `spectral`
+# extra. Skip cleanly when it isn't installed rather than erroring collection.
+pytest.importorskip("var_spectral")
+from var_spectral.detector import SpectralRuptureDetector  # noqa: E402
 
 
 class _ToyConfig:

@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## v3.2.1 — Packaging fixes (fresh checkout installs and tests cleanly)
+
+Fixed the "every fresh clone is broken" class of bug: a base `pip install` +
+`pytest`/`audit_suite` now works without silent failures.
+
+- **`reedsolo` moved from the `dist` extra to core dependencies.** It is used by
+  `core.chronos_lock`, which `benchmarks.audit_suite` exercises in single-node
+  mode — so a base install running the (reproducibility-claim) audit suite was
+  erroring 5 of its 16 checks with `ModuleNotFoundError: reedsolo`. The audit
+  suite now runs complete on a plain `pip install`.
+- **Optional-feature tests now skip instead of erroring collection.**
+  `test_dual_link` (zmq), `test_passive_hook` (var_spectral), `test_chronos_lock`
+  (reedsolo), `test_validate_notebooks` (nbformat), and the dual-link case in
+  `test_bf16_paths` guard their imports with `pytest.importorskip`. A core
+  install reports `399 passed, 6 skipped` (was: 4 collection errors); a full
+  `[all]` install plus VAR reports `450 passed`.
+- **Added `dev` extra** (`pytest`, `nbformat`) and an **`all` extra** bundling
+  `dist`+`spectral`+`bench`+`dev`. README documents the core-vs-full install.
+- Cross-repo dependency `var-spectral>=1.1.0` now resolves: the VAR repo gained
+  a `var_spectral` import alias at v1.1.0 (previously it only published `var`,
+  so the `spectral` extra could never import).
+
 ## v4.0.0-slim — Phase 2 checkpoint (depend on VAR, don't duplicate)
 
 - Added `var` (https://github.com/holeyfield33-art/VAR) as a real dependency,

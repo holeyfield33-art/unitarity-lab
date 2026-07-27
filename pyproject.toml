@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unitarity-labs"
-version = "3.2.0"
+version = "3.2.1"
 description = "Experimental multi-model runtime for transformer instrumentation, latent alignment tracing, distributed coordination"
 readme = "README.md"
 authors = [{name = "holeyfield33-art"}]
@@ -31,6 +31,11 @@ dependencies = [
     "scipy>=1.10",
     "rich>=13.0",
     "safetensors>=0.4",
+    # Reed-Solomon shards in core.chronos_lock. Pure-Python, no heavy
+    # transitive deps. Core (not `dist`) because benchmarks.audit_suite —
+    # the reproducibility claim — exercises ChronosLock in single-node mode,
+    # so a base install must be able to run the full audit without extras.
+    "reedsolo>=1.5",
 ]
 requires-python = ">=3.9"
 
@@ -38,7 +43,6 @@ requires-python = ">=3.9"
 dist = [
     "pyzmq>=25.0",
     "msgpack>=1.0",
-    "reedsolo>=1.5",
 ]
 # VAR, for unitarity_labs.core.passive_hook. Its import package is
 # `var_spectral`; `var` on PyPI is an unrelated project.
@@ -53,6 +57,17 @@ spectral = [
 # For benchmarks.real_gsm8k, which loads GSM8K via `datasets`.
 bench = [
     "datasets>=2.14",
+]
+# Test/dev tooling. `nbformat` is required by scripts/validate_notebooks.py
+# (and its test). Full test run: pip install -e ".[dist,spectral,bench,dev]"
+# (or the `all` extra below). Without an extra, tests that need it skip.
+dev = [
+    "pytest>=7.0",
+    "nbformat>=5.0",
+]
+# Everything, for a full local checkout that runs the entire test suite.
+all = [
+    "unitarity-labs[dist,spectral,bench,dev]",
 ]
 
 [project.urls]

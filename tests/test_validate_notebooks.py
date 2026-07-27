@@ -15,6 +15,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
+# validate_notebooks imports nbformat, which ships in the optional `dev` extra.
+pytest.importorskip("nbformat")
+
 from validate_notebooks import (  # noqa: E402
     BAD_UNITARITY_INSTALL,
     BAD_VAR_INSTALL,

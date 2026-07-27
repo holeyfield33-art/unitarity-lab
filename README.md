@@ -100,25 +100,44 @@ that is an unrelated project (portfolio Value-at-Risk) that shadows it.
 ### Install from PyPI
 
 ```bash
-pip install unitarity-labs                 # core
+pip install unitarity-labs                 # core (runs the full audit suite)
 pip install 'unitarity-labs[spectral]'     # + VAR, for passive_hook
 pip install 'unitarity-labs[bench]'        # + datasets, for real_gsm8k
 pip install 'unitarity-labs[dist]'         # + pyzmq/msgpack, for dual-node
+pip install 'unitarity-labs[dev]'          # + pytest/nbformat, to run tests
+pip install 'unitarity-labs[all]'          # everything above
 ```
+
+The **core** install is self-sufficient: it now includes `reedsolo`, so
+`python -m benchmarks.audit_suite` runs every check without an extra. (Before
+v3.2.1 the ChronosLock checks errored on a base install — see CHANGELOG.)
 
 ### Install from source
 
 ```bash
 git clone https://github.com/holeyfield33-art/unitarity-lab.git
 cd unitarity-lab
-pip install -e .
+pip install -e .            # core only
+pip install -e '.[all]'     # everything, to run the full test suite
+```
+
+The `[spectral]` extra pulls VAR from PyPI as `var-spectral`. For a local
+side-by-side checkout of both repos, install VAR editable instead:
+
+```bash
+pip install -e ../VAR       # provides the `var_spectral` import
 ```
 
 ### Verify installation
 
 ```bash
-pytest tests/ -v
+pytest tests/               # core install: optional-feature tests skip cleanly
+pip install -e '.[all]' && pytest tests/   # full run, nothing skipped
 ```
+
+On a core install the suite is green with the `dist`/`spectral`/notebook tests
+**skipped** (not errored) — that is expected. Install `[all]` (plus VAR) to run
+every test.
 
 The console script `unitarity-start` is installed automatically and is equivalent to `python start_node.py`:
 
