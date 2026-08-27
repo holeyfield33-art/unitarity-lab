@@ -55,4 +55,4 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Packaging
 
-- CLI entry point packaging compatibility improvements for PyPI and Colab.
+- CLI entry point packaging compatibility improvements for PyPI and Colab.Tested.
