@@ -80,6 +80,29 @@ deduplicated into 32 shared step observations for analysis.
 
 ## Reproduce locally
 
+### Compatibility follow-up
+
+The earlier packaging blocker is now resolved **locally** by
+[VAR PR #6](https://github.com/holeyfield33-art/VAR/pull/6), commit `d1613a0`.
+Its wheel installs the existing detector source as `var_spectral` under distribution
+`var-spectral==1.1.0`; it does not alias an unrelated installed `var` package.
+The wheel was installed only into `.experiment-deps`. No PyPI release or live
+InsideAI dependency change was performed.
+
+Recreate from the sibling fixed checkout:
+
+```powershell
+../Insideai/backend/.venv/Scripts/python.exe -m pip install --no-deps --no-build-isolation --target .experiment-deps ../VAR-experiments
+```
+
+Verification: 20 passive-hook/spectral-reference tests passed after installation,
+and 15 VAR detector/distribution tests passed. The latter exercise the installed
+CLI and the default calibration transition after 100 samples, followed by
+rupture and recovery. This validates plumbing on controlled inputs, not
+hallucination detection. Real-model phase-separated calibration remains pending.
+
+Open experiment PR: https://github.com/holeyfield33-art/unitarity-lab/pull/22.
+
 From this clone in PowerShell:
 
 ```powershell
