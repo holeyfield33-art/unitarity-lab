@@ -1,0 +1,55 @@
+{
+  "evidence_type": "synthetic mechanism probes; no language model answers evaluated",
+  "seed": 42,
+  "unitarity_sha": "66c004b5f37a5f4a129761ef1d7f87f306b100ac",
+  "source_file_sha256": {
+    "unitarity_labs/core/bridge.py": "ed39acbe90b44e83d69b8347da5353089b85ee95824dc5e68e92d7e29c1aad17",
+    "unitarity_labs/core/horizons.py": "c9c3922218ca1c0e131212169673e4de73b6060d999ee14c24985ef137c594f9",
+    "unitarity_labs/core/metrics.py": "d4c1386c7e3248301ee768a66f94173fb3d2d4245ead901fc04963e5308755da",
+    "unitarity_labs/core/bocpd.py": "cedddc2b9a6d5806c95dda1fc83eb27f4f06c47c713ce33570e2b06cf9348d47",
+    "unitarity_labs/core/chronos_lock.py": "ad5be5f927fe24d805fc243359c2e07080ed280e81ca7d54b3e43ab0cc358426",
+    "unitarity_labs/core/dual_link.py": "d2d52a26ff12795f30459c3ad1dddd22206fd139b45a88015a90f0f5754f45b1",
+    "experiments/metric_controls.py": "3c69c792c9c3e38a2ae5ee9cc7fb1da57b33e0f0630eb5b2cf2d71fd47573936",
+    "experiments/layer_probe.py": "11b9268cd3aca9f8d144458824b472f3c016840f0fa02e192ae9ecd5dc2332b5"
+  },
+  "torch": "2.14.0+cpu",
+  "metrics": {
+    "zeta_independent": -0.001801392063498497,
+    "zeta_shared_offset": 0.9900128245353699,
+    "zeta_positive_rescale": 1.0000001192092896,
+    "spectral_gap": 0.605377197265625,
+    "spectral_gap_scale_3": 5.448371887207031,
+    "decode_one_row_gap": 37.849769592285156,
+    "decode_one_row_squared_norm": 37.849769592285156,
+    "exact_multitoken_gap": 0.6053781509399414,
+    "gap_scale_ratio": 8.99996219186369
+  },
+  "bocpd": {
+    "synthetic_change_step_zero_based": 150,
+    "first_alarm": 150,
+    "stable_false_alarms": 0,
+    "max_difference_when_zeta_changes": 0.0,
+    "same_sample_after_stable_history": 0.046036132307453875,
+    "same_sample_after_collapsed_history": 0.046036132307453875
+  },
+  "chronos": {
+    "persistent": {
+      "first_sever_step_zero_based": 6,
+      "absolute_desync_sum": 0.6000000000000003,
+      "signed_desync_sum": 0.6000000000000003
+    },
+    "alternating": {
+      "first_sever_step_zero_based": null,
+      "absolute_desync_sum": 0.6000000000000003,
+      "signed_desync_sum": 0.0
+    }
+  },
+  "dual_identical_basis_reported_phi": [
+    0.9999999403953552,
+    0.9999999403953552,
+    0.9999999403953552,
+    0.7999999403953553,
+    0.7999999403953553,
+    0.7999999403953553
+  ]
+}
