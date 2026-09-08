@@ -581,9 +581,14 @@ class CrossLayerEntanglementHook:
     def spectral_gap(self) -> float:
         """Compute the spectral gap (Δλ) of the source layer activation.
 
-        The spectral gap is the difference between the top-2 eigenvalues
-        of the covariance matrix. A small gap indicates the entanglement
-        bridge is weakening.
+        Difference between the largest two eigenvalues of the uncentered
+        second moment X.T @ X / n. This is scale-dependent, not a measure
+        of answer correctness. For one feature there is no second eigenvalue
+        and the existing zero-return convention is retained.
+
+        Short contexts use an exact small Gram matrix. This avoids duplicate
+        Ritz values from finite-precision Lanczos on low-rank decode inputs.
+        Larger matrices retain the existing approximate Lanczos path.
         """
         if self._source_activation is None:
             return 0.0
@@ -593,6 +598,18 @@ class CrossLayerEntanglementHook:
         )
         d = flat.shape[-1]
         n = flat.shape[0]
+
+        if d < 2 or n == 0:
+            return 0.0
+        if n == 1:
+            # Rank one: eigenvalues are ||x||^2 and d-1 zeros.
+            return flat.square().sum().item()
+        if min(n, d) <= 128:
+            # X X.T and X.T X share nonzero eigenvalues. The smaller
+            # matrix bounds eigensolver cost for short-prompt telemetry.
+            gram = (flat @ flat.T if n < d else flat.T @ flat) / n
+            eigenvalues = torch.linalg.eigvalsh(gram).clamp_min(0)
+            return (eigenvalues[-1] - eigenvalues[-2]).item()
 
         def cov_matvec(v: torch.Tensor) -> torch.Tensor:
             av = flat @ v.unsqueeze(-1)

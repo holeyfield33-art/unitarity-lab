@@ -1,0 +1,861 @@
+{
+  "evidence_type": "real-model single-token intervention pilot; no generated-answer hallucination labels",
+  "model": "distilgpt2",
+  "model_revision": "2290a62682d06624634c1f46a6ad5be0f47f38aa",
+  "unitarity_sha": "66c004b5f37a5f4a129761ef1d7f87f306b100ac",
+  "seed": 42,
+  "dtype": "float32",
+  "device": "cpu",
+  "phase": "prefill",
+  "metric_scope": "full prompt block outputs; source L3, sink L4; indices zero-based",
+  "rows": [
+    {
+      "case": "capital",
+      "arm": "baseline",
+      "residual_gain_L3": null,
+      "prompt": "The capital of France is",
+      "expected_next_token": " Paris",
+      "top_token": " the",
+      "top_probability": 0.11774274706840515,
+      "expected_probability": 0.002763451309874654,
+      "expected_rank": 37,
+      "kl_baseline_to_arm": 0.0,
+      "max_logprob_change": 0.0,
+      "zeta_source3_sink4": 0.9960756897926331,
+      "source3_spectral_gap": 0.8125,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 43.06679916381836,
+          "residual_delta": 42.50541687011719,
+          "relative_delta": 8.347614288330078
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 51.684410095214844,
+          "residual_delta": 15.193059921264648,
+          "relative_delta": 0.35277894139289856
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 61.06687927246094,
+          "residual_delta": 20.97250747680664,
+          "relative_delta": 0.4057801365852356
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 78.79388427734375,
+          "residual_delta": 33.061546325683594,
+          "relative_delta": 0.5413990020751953
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 152.3790283203125,
+          "residual_delta": 89.1589584350586,
+          "relative_delta": 1.1315467357635498
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 307.778076171875,
+          "residual_delta": 207.70928955078125,
+          "relative_delta": 1.3631094694137573
+        }
+      ]
+    },
+    {
+      "case": "capital",
+      "arm": "sham",
+      "residual_gain_L3": 1.0,
+      "prompt": "The capital of France is",
+      "expected_next_token": " Paris",
+      "top_token": " the",
+      "top_probability": 0.11774282902479172,
+      "expected_probability": 0.0027634419966489077,
+      "expected_rank": 37,
+      "kl_baseline_to_arm": -7.931797441074195e-09,
+      "max_logprob_change": 2.09808349609375e-05,
+      "zeta_source3_sink4": 0.9960756897926331,
+      "source3_spectral_gap": 1.4375,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 43.06679916381836,
+          "residual_delta": 42.50541687011719,
+          "relative_delta": 8.347614288330078
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 51.684410095214844,
+          "residual_delta": 15.193059921264648,
+          "relative_delta": 0.35277894139289856
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 61.06687927246094,
+          "residual_delta": 20.97250747680664,
+          "relative_delta": 0.4057801365852356
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 78.79388427734375,
+          "residual_delta": 33.061546325683594,
+          "relative_delta": 0.5413990020751953
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 152.37901306152344,
+          "residual_delta": 89.1589584350586,
+          "relative_delta": 1.1315467357635498
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 307.778076171875,
+          "residual_delta": 207.7093048095703,
+          "relative_delta": 1.3631097078323364
+        }
+      ]
+    },
+    {
+      "case": "capital",
+      "arm": "attenuate_L3",
+      "residual_gain_L3": 0.9,
+      "prompt": "The capital of France is",
+      "expected_next_token": " Paris",
+      "top_token": " the",
+      "top_probability": 0.1120925322175026,
+      "expected_probability": 0.002468175021931529,
+      "expected_rank": 46,
+      "kl_baseline_to_arm": 0.0023080389946699142,
+      "max_logprob_change": 0.38912010192871094,
+      "zeta_source3_sink4": 0.9960156083106995,
+      "source3_spectral_gap": 0.9375,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 43.06679916381836,
+          "residual_delta": 42.50541687011719,
+          "relative_delta": 8.347614288330078
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 51.684410095214844,
+          "residual_delta": 15.193059921264648,
+          "relative_delta": 0.35277894139289856
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 61.06687927246094,
+          "residual_delta": 20.97250747680664,
+          "relative_delta": 0.4057801365852356
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 76.56480407714844,
+          "residual_delta": 29.755390167236328,
+          "relative_delta": 0.48725906014442444
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 150.10218811035156,
+          "residual_delta": 89.29963684082031,
+          "relative_delta": 1.1663274765014648
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 300.1600341796875,
+          "residual_delta": 201.73690795898438,
+          "relative_delta": 1.3439971208572388
+        }
+      ]
+    },
+    {
+      "case": "capital",
+      "arm": "block_L3",
+      "residual_gain_L3": 0.0,
+      "prompt": "The capital of France is",
+      "expected_next_token": " Paris",
+      "top_token": " the",
+      "top_probability": 0.06953248381614685,
+      "expected_probability": 0.0006193240988068283,
+      "expected_rank": 204,
+      "kl_baseline_to_arm": 0.4557528793811798,
+      "max_logprob_change": 4.948556900024414,
+      "zeta_source3_sink4": 0.9955611824989319,
+      "source3_spectral_gap": 0.0625,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 43.06679916381836,
+          "residual_delta": 42.50541687011719,
+          "relative_delta": 8.347614288330078
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 51.684410095214844,
+          "residual_delta": 15.193059921264648,
+          "relative_delta": 0.35277894139289856
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 61.06687927246094,
+          "residual_delta": 20.97250747680664,
+          "relative_delta": 0.4057801365852356
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 61.06687927246094,
+          "residual_delta": 0.0,
+          "relative_delta": 0.0
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 128.91262817382812,
+          "residual_delta": 89.12772369384766,
+          "relative_delta": 1.459510087966919
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 233.3392333984375,
+          "residual_delta": 152.9621124267578,
+          "relative_delta": 1.1865564584732056
+        }
+      ]
+    },
+    {
+      "case": "arithmetic",
+      "arm": "baseline",
+      "residual_gain_L3": null,
+      "prompt": "1 + 1 =",
+      "expected_next_token": " 2",
+      "top_token": " 0",
+      "top_probability": 0.25626859068870544,
+      "expected_probability": 0.08988428860902786,
+      "expected_rank": 3,
+      "kl_baseline_to_arm": 0.0,
+      "max_logprob_change": 0.0,
+      "zeta_source3_sink4": 0.99710613489151,
+      "source3_spectral_gap": 0.625,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 44.83247375488281,
+          "residual_delta": 44.19969177246094,
+          "relative_delta": 8.253522872924805
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 56.635066986083984,
+          "residual_delta": 21.973230361938477,
+          "relative_delta": 0.4901186227798462
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 65.58078002929688,
+          "residual_delta": 20.47296905517578,
+          "relative_delta": 0.36148926615715027
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 84.87187194824219,
+          "residual_delta": 35.14350891113281,
+          "relative_delta": 0.5358812212944031
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 148.5446319580078,
+          "residual_delta": 80.44313049316406,
+          "relative_delta": 0.9478185176849365
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 352.3726806640625,
+          "residual_delta": 266.9533996582031,
+          "relative_delta": 1.7971258163452148
+        }
+      ]
+    },
+    {
+      "case": "arithmetic",
+      "arm": "sham",
+      "residual_gain_L3": 1.0,
+      "prompt": "1 + 1 =",
+      "expected_next_token": " 2",
+      "top_token": " 0",
+      "top_probability": 0.2562679350376129,
+      "expected_probability": 0.08988475799560547,
+      "expected_rank": 3,
+      "kl_baseline_to_arm": -9.251613164451555e-08,
+      "max_logprob_change": 2.765655517578125e-05,
+      "zeta_source3_sink4": 0.99710613489151,
+      "source3_spectral_gap": 0.6875,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 44.83247375488281,
+          "residual_delta": 44.19969177246094,
+          "relative_delta": 8.253522872924805
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 56.635066986083984,
+          "residual_delta": 21.973230361938477,
+          "relative_delta": 0.4901186227798462
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 65.58078002929688,
+          "residual_delta": 20.47296905517578,
+          "relative_delta": 0.36148926615715027
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 84.87187194824219,
+          "residual_delta": 35.14350891113281,
+          "relative_delta": 0.5358812212944031
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 148.54461669921875,
+          "residual_delta": 80.44313049316406,
+          "relative_delta": 0.9478185176849365
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 352.3726806640625,
+          "residual_delta": 266.9533996582031,
+          "relative_delta": 1.797126054763794
+        }
+      ]
+    },
+    {
+      "case": "arithmetic",
+      "arm": "attenuate_L3",
+      "residual_gain_L3": 0.9,
+      "prompt": "1 + 1 =",
+      "expected_next_token": " 2",
+      "top_token": " 0",
+      "top_probability": 0.2649354040622711,
+      "expected_probability": 0.08862756192684174,
+      "expected_rank": 3,
+      "kl_baseline_to_arm": 0.0007337277056649327,
+      "max_logprob_change": 0.2568836212158203,
+      "zeta_source3_sink4": 0.9970057606697083,
+      "source3_spectral_gap": 1.4375,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 44.83247375488281,
+          "residual_delta": 44.19969177246094,
+          "relative_delta": 8.253522872924805
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 56.635066986083984,
+          "residual_delta": 21.973230361938477,
+          "relative_delta": 0.4901186227798462
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 65.58078002929688,
+          "residual_delta": 20.47296905517578,
+          "relative_delta": 0.36148926615715027
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 82.4732666015625,
+          "residual_delta": 31.6291561126709,
+          "relative_delta": 0.4822930693626404
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 146.50648498535156,
+          "residual_delta": 81.1589126586914,
+          "relative_delta": 0.9840632677078247
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 344.0301818847656,
+          "residual_delta": 260.0001525878906,
+          "relative_delta": 1.7746665477752686
+        }
+      ]
+    },
+    {
+      "case": "arithmetic",
+      "arm": "block_L3",
+      "residual_gain_L3": 0.0,
+      "prompt": "1 + 1 =",
+      "expected_next_token": " 2",
+      "top_token": " 0",
+      "top_probability": 0.37131837010383606,
+      "expected_probability": 0.06404920667409897,
+      "expected_rank": 3,
+      "kl_baseline_to_arm": 0.10010628402233124,
+      "max_logprob_change": 3.3140087127685547,
+      "zeta_source3_sink4": 0.9958181977272034,
+      "source3_spectral_gap": 0.375,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 44.83247375488281,
+          "residual_delta": 44.19969177246094,
+          "relative_delta": 8.253522872924805
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 56.635066986083984,
+          "residual_delta": 21.973230361938477,
+          "relative_delta": 0.4901186227798462
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 65.58078002929688,
+          "residual_delta": 20.47296905517578,
+          "relative_delta": 0.36148926615715027
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 65.58078002929688,
+          "residual_delta": 0.0,
+          "relative_delta": 0.0
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 129.46804809570312,
+          "residual_delta": 89.2450942993164,
+          "relative_delta": 1.360842227935791
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 250.80474853515625,
+          "residual_delta": 180.3121795654297,
+          "relative_delta": 1.3927156925201416
+        }
+      ]
+    },
+    {
+      "case": "grounded",
+      "arm": "baseline",
+      "residual_gain_L3": null,
+      "prompt": "The note says: The box contains a red ball. According to the note, the ball is",
+      "expected_next_token": " red",
+      "top_token": " a",
+      "top_probability": 0.10202988237142563,
+      "expected_probability": 0.0021201162599027157,
+      "expected_rank": 71,
+      "kl_baseline_to_arm": 0.0,
+      "max_logprob_change": 0.0,
+      "zeta_source3_sink4": 0.983210563659668,
+      "source3_spectral_gap": 0.078125,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 41.59748458862305,
+          "residual_delta": 41.03171157836914,
+          "relative_delta": 8.735735893249512
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 49.58260726928711,
+          "residual_delta": 15.736191749572754,
+          "relative_delta": 0.37829670310020447
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.12848663330078,
+          "residual_delta": 18.195770263671875,
+          "relative_delta": 0.36697888374328613
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 77.84379577636719,
+          "residual_delta": 35.2293701171875,
+          "relative_delta": 0.6166690587997437
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 140.71112060546875,
+          "residual_delta": 76.98381042480469,
+          "relative_delta": 0.9889523983001709
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 323.7412414550781,
+          "residual_delta": 235.4735107421875,
+          "relative_delta": 1.673453450202942
+        }
+      ]
+    },
+    {
+      "case": "grounded",
+      "arm": "sham",
+      "residual_gain_L3": 1.0,
+      "prompt": "The note says: The box contains a red ball. According to the note, the ball is",
+      "expected_next_token": " red",
+      "top_token": " a",
+      "top_probability": 0.10202983766794205,
+      "expected_probability": 0.0021201325580477715,
+      "expected_rank": 71,
+      "kl_baseline_to_arm": 3.507445001105225e-08,
+      "max_logprob_change": 2.288818359375e-05,
+      "zeta_source3_sink4": 0.983210563659668,
+      "source3_spectral_gap": 0.046875,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 41.59748458862305,
+          "residual_delta": 41.03171157836914,
+          "relative_delta": 8.735735893249512
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 49.58260726928711,
+          "residual_delta": 15.736191749572754,
+          "relative_delta": 0.37829670310020447
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.12848663330078,
+          "residual_delta": 18.195770263671875,
+          "relative_delta": 0.36697888374328613
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 77.84379577636719,
+          "residual_delta": 35.2293701171875,
+          "relative_delta": 0.6166690587997437
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 140.71112060546875,
+          "residual_delta": 76.98381042480469,
+          "relative_delta": 0.9889523983001709
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 323.7412414550781,
+          "residual_delta": 235.47352600097656,
+          "relative_delta": 1.6734535694122314
+        }
+      ]
+    },
+    {
+      "case": "grounded",
+      "arm": "attenuate_L3",
+      "residual_gain_L3": 0.9,
+      "prompt": "The note says: The box contains a red ball. According to the note, the ball is",
+      "expected_next_token": " red",
+      "top_token": " a",
+      "top_probability": 0.10140176117420197,
+      "expected_probability": 0.002205305965617299,
+      "expected_rank": 70,
+      "kl_baseline_to_arm": 0.0005566580221056938,
+      "max_logprob_change": 0.2604637145996094,
+      "zeta_source3_sink4": 0.9828612804412842,
+      "source3_spectral_gap": 0.390625,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 41.59748458862305,
+          "residual_delta": 41.03171157836914,
+          "relative_delta": 8.735735893249512
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 49.58260726928711,
+          "residual_delta": 15.736191749572754,
+          "relative_delta": 0.37829670310020447
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.12848663330078,
+          "residual_delta": 18.195770263671875,
+          "relative_delta": 0.36697888374328613
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 75.28849792480469,
+          "residual_delta": 31.706432342529297,
+          "relative_delta": 0.5550021529197693
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 138.71749877929688,
+          "residual_delta": 77.61780548095703,
+          "relative_delta": 1.0309383869171143
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 320.7686767578125,
+          "residual_delta": 233.9297332763672,
+          "relative_delta": 1.6863750219345093
+        }
+      ]
+    },
+    {
+      "case": "grounded",
+      "arm": "block_L3",
+      "residual_gain_L3": 0.0,
+      "prompt": "The note says: The box contains a red ball. According to the note, the ball is",
+      "expected_next_token": " red",
+      "top_token": " a",
+      "top_probability": 0.12757135927677155,
+      "expected_probability": 0.002437975723296404,
+      "expected_rank": 51,
+      "kl_baseline_to_arm": 0.16789740324020386,
+      "max_logprob_change": 4.268674850463867,
+      "zeta_source3_sink4": 0.9791905283927917,
+      "source3_spectral_gap": 0.0625,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 41.59748458862305,
+          "residual_delta": 41.03171157836914,
+          "relative_delta": 8.735735893249512
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 49.58260726928711,
+          "residual_delta": 15.736191749572754,
+          "relative_delta": 0.37829670310020447
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.12848663330078,
+          "residual_delta": 18.195770263671875,
+          "relative_delta": 0.36697888374328613
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 57.12848663330078,
+          "residual_delta": 0.0,
+          "relative_delta": 0.0
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 119.52687072753906,
+          "residual_delta": 81.69771575927734,
+          "relative_delta": 1.4300696849822998
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 296.28125,
+          "residual_delta": 224.84298706054688,
+          "relative_delta": 1.881108283996582
+        }
+      ]
+    },
+    {
+      "case": "user_completion",
+      "arm": "baseline",
+      "residual_gain_L3": null,
+      "prompt": "The transformer architecture works by",
+      "expected_next_token": null,
+      "top_token": " using",
+      "top_probability": 0.055413439869880676,
+      "expected_probability": null,
+      "expected_rank": null,
+      "kl_baseline_to_arm": 0.0,
+      "max_logprob_change": 0.0,
+      "zeta_source3_sink4": 0.996313214302063,
+      "source3_spectral_gap": 0.1875,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 42.296043395996094,
+          "residual_delta": 41.62656784057617,
+          "relative_delta": 8.10958194732666
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 50.527198791503906,
+          "residual_delta": 18.006927490234375,
+          "relative_delta": 0.4257355034351349
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.683998107910156,
+          "residual_delta": 22.274551391601562,
+          "relative_delta": 0.44084277749061584
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 76.40479278564453,
+          "residual_delta": 34.43412780761719,
+          "relative_delta": 0.5969442129135132
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 153.03050231933594,
+          "residual_delta": 96.47245788574219,
+          "relative_delta": 1.2626492977142334
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 360.7454528808594,
+          "residual_delta": 268.9942932128906,
+          "relative_delta": 1.757782220840454
+        }
+      ]
+    },
+    {
+      "case": "user_completion",
+      "arm": "sham",
+      "residual_gain_L3": 1.0,
+      "prompt": "The transformer architecture works by",
+      "expected_next_token": null,
+      "top_token": " using",
+      "top_probability": 0.05541359633207321,
+      "expected_probability": null,
+      "expected_rank": null,
+      "kl_baseline_to_arm": -3.9125305306697555e-07,
+      "max_logprob_change": 2.47955322265625e-05,
+      "zeta_source3_sink4": 0.996313214302063,
+      "source3_spectral_gap": 0.75,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 42.296043395996094,
+          "residual_delta": 41.62656784057617,
+          "relative_delta": 8.10958194732666
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 50.527198791503906,
+          "residual_delta": 18.006927490234375,
+          "relative_delta": 0.4257355034351349
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.683998107910156,
+          "residual_delta": 22.274551391601562,
+          "relative_delta": 0.44084277749061584
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 76.40479278564453,
+          "residual_delta": 34.43412780761719,
+          "relative_delta": 0.5969442129135132
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 153.03050231933594,
+          "residual_delta": 96.47247314453125,
+          "relative_delta": 1.2626495361328125
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 360.74542236328125,
+          "residual_delta": 268.9942932128906,
+          "relative_delta": 1.757782220840454
+        }
+      ]
+    },
+    {
+      "case": "user_completion",
+      "arm": "attenuate_L3",
+      "residual_gain_L3": 0.9,
+      "prompt": "The transformer architecture works by",
+      "expected_next_token": null,
+      "top_token": " using",
+      "top_probability": 0.05580442398786545,
+      "expected_probability": null,
+      "expected_rank": null,
+      "kl_baseline_to_arm": 0.0005336421309038997,
+      "max_logprob_change": 0.3170127868652344,
+      "zeta_source3_sink4": 0.996249794960022,
+      "source3_spectral_gap": 1.4375,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 42.296043395996094,
+          "residual_delta": 41.62656784057617,
+          "relative_delta": 8.10958194732666
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 50.527198791503906,
+          "residual_delta": 18.006927490234375,
+          "relative_delta": 0.4257355034351349
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.683998107910156,
+          "residual_delta": 22.274551391601562,
+          "relative_delta": 0.44084277749061584
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 74.02670288085938,
+          "residual_delta": 30.990713119506836,
+          "relative_delta": 0.537249743938446
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 150.5107879638672,
+          "residual_delta": 96.40301513671875,
+          "relative_delta": 1.3022735118865967
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 351.6159362792969,
+          "residual_delta": 261.1828918457031,
+          "relative_delta": 1.7353100776672363
+        }
+      ]
+    },
+    {
+      "case": "user_completion",
+      "arm": "block_L3",
+      "residual_gain_L3": 0.0,
+      "prompt": "The transformer architecture works by",
+      "expected_next_token": null,
+      "top_token": " the",
+      "top_probability": 0.05813520774245262,
+      "expected_probability": null,
+      "expected_rank": null,
+      "kl_baseline_to_arm": 0.19353768229484558,
+      "max_logprob_change": 5.150106430053711,
+      "zeta_source3_sink4": 0.9954776763916016,
+      "source3_spectral_gap": 0.375,
+      "layers": [
+        {
+          "layer": 0,
+          "hidden_norm": 42.296043395996094,
+          "residual_delta": 41.62656784057617,
+          "relative_delta": 8.10958194732666
+        },
+        {
+          "layer": 1,
+          "hidden_norm": 50.527198791503906,
+          "residual_delta": 18.006927490234375,
+          "relative_delta": 0.4257355034351349
+        },
+        {
+          "layer": 2,
+          "hidden_norm": 57.683998107910156,
+          "residual_delta": 22.274551391601562,
+          "relative_delta": 0.44084277749061584
+        },
+        {
+          "layer": 3,
+          "hidden_norm": 57.683998107910156,
+          "residual_delta": 0.0,
+          "relative_delta": 0.0
+        },
+        {
+          "layer": 4,
+          "hidden_norm": 127.33735656738281,
+          "residual_delta": 93.95903015136719,
+          "relative_delta": 1.6288578510284424
+        },
+        {
+          "layer": 5,
+          "hidden_norm": 252.79246520996094,
+          "residual_delta": 176.0696563720703,
+          "relative_delta": 1.382702350616455
+        }
+      ]
+    }
+  ]
+}

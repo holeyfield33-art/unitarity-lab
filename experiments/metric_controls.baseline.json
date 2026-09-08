@@ -1,0 +1,45 @@
+{
+  "evidence_type": "synthetic mechanism probes; no language model answers evaluated",
+  "seed": 42,
+  "unitarity_sha": "66c004b5f37a5f4a129761ef1d7f87f306b100ac",
+  "torch": "2.14.0+cpu",
+  "metrics": {
+    "zeta_independent": -0.001801392063498497,
+    "zeta_shared_offset": 0.9900128245353699,
+    "zeta_positive_rescale": 1.0000001192092896,
+    "spectral_gap": 0.6053752899169922,
+    "spectral_gap_scale_3": 5.448387145996094,
+    "decode_one_row_gap": 0.0,
+    "decode_one_row_squared_norm": 37.849769592285156,
+    "exact_multitoken_gap": 0.6053781509399414,
+    "gap_scale_ratio": 9.000015753439763
+  },
+  "bocpd": {
+    "synthetic_change_step_zero_based": 150,
+    "first_alarm": 150,
+    "stable_false_alarms": 0,
+    "max_difference_when_zeta_changes": 0.0,
+    "same_sample_after_stable_history": 0.046036132307453875,
+    "same_sample_after_collapsed_history": 0.046036132307453875
+  },
+  "chronos": {
+    "persistent": {
+      "first_sever_step_zero_based": 6,
+      "absolute_desync_sum": 0.6000000000000003,
+      "signed_desync_sum": 0.6000000000000003
+    },
+    "alternating": {
+      "first_sever_step_zero_based": null,
+      "absolute_desync_sum": 0.6000000000000003,
+      "signed_desync_sum": 0.0
+    }
+  },
+  "dual_identical_basis_reported_phi": [
+    0.9999999403953552,
+    0.9999999403953552,
+    0.9999999403953552,
+    0.7999999403953553,
+    0.7999999403953553,
+    0.7999999403953553
+  ]
+}
